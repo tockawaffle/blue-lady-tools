@@ -4,25 +4,31 @@
 use once_cell::sync::Lazy;
 use std::sync::{Arc, Mutex};
 
-static GLOBAL_TIMER: Lazy<Arc<Mutex<Option<file::timer::Timer>>>> =
+static GLOBAL_TIMER: Lazy<Arc<Mutex<Option<watchalong::timer::Timer>>>> =
     Lazy::new(|| Arc::new(Mutex::new(None)));
-mod file;
+mod watchalong;
+mod ytdl;
 
 #[tauri::command]
 fn read_file(path: String) -> Result<(String, String, String), String> {
-    let file_content = file::read_file::read_file(&path).expect("Error reading file");
+    let file_content = watchalong::read_file::read_file(&path).expect("Error reading watchalong");
     Ok((file_content.episode, file_content.time, path.clone()))
 }
 
 #[tauri::command]
 fn reset_file(path: String) {
-    file::reset_file::reset_file(&path).expect("Error resetting file");
+    watchalong::reset_file::reset_file(&path).expect("Error resetting watchalong");
+}
+
+#[tauri::command]
+fn reset_timer(path: String) {
+    watchalong::reset_timer::reset_timer(&path).expect("Error resetting watchalong");
 }
 
 #[tauri::command]
 fn start_timer(path: String, window: tauri::Window) -> Result<(), String> {
     // Initialize the Timer struct
-    let timer = file::timer::Timer::new(&path);
+    let timer = watchalong::timer::Timer::new(&path);
     // Store the Timer instance globally
     *GLOBAL_TIMER.lock().unwrap() = Some(timer);
     // Start the timer
@@ -42,12 +48,12 @@ fn stop_timer(_path: String) -> Result<(), String> {
 
 #[tauri::command]
 fn add_episode(path: String, window: tauri::Window) {
-    file::episodes::add_episode(path, window);
+    watchalong::episodes::add_episode(path, window);
 }
 
 #[tauri::command]
 fn dec_episode(path: String, window: tauri::Window) {
-    file::episodes::dec_episode(path, window);
+    watchalong::episodes::dec_episode(path, window);
 }
 
 fn main() {
@@ -56,6 +62,7 @@ fn main() {
             read_file,
             reset_file,
             start_timer,
+            reset_timer,
             stop_timer,
             add_episode,
             dec_episode
