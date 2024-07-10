@@ -50,7 +50,7 @@ mod tests {
         let path = "test.txt";
         let result = read_file(path).unwrap();
         assert_eq!(result.episode, "1");
-        let (mut minutes, seconds) = crate::watchalong::timer::parse_time(&result.time);
+        let (minutes, seconds) = crate::watchalong::timer::parse_time(&result.time);
         assert_eq!(minutes, 0);
         assert_eq!(seconds, 0);
         

@@ -23,7 +23,7 @@
             },
             "externalBin": [],
             "icon": [
-                "icons/smurg.ico"
+                "icons/icon.ico"
             ],
             "identifier": "com.blt",
             "longDescription": "",
@@ -57,7 +57,7 @@
                 "height": 480,
                 "minHeight": 480,
                 "resizable": true,
-                "title": "Timer Simples"
+                "title": "Blue Lady's Tools"
             }
         ]
     }

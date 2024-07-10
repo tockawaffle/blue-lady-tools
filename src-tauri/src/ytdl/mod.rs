@@ -1,1 +1,1 @@
-mod download;
+pub(crate) mod get_deps;

@@ -1,8 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use once_cell::sync::Lazy;
+use std::process::Command;
 use std::sync::{Arc, Mutex};
+
+use once_cell::sync::Lazy;
+use tauri::Window;
+use crate::ytdl::get_deps::{check_and_install, emit_progress, install_chocolatey};
 
 static GLOBAL_TIMER: Lazy<Arc<Mutex<Option<watchalong::timer::Timer>>>> =
     Lazy::new(|| Arc::new(Mutex::new(None)));
@@ -56,6 +60,26 @@ fn dec_episode(path: String, window: tauri::Window) {
     watchalong::episodes::dec_episode(path, window);
 }
 
+#[tauri::command]
+fn get_dependencies(window: Window) {
+    emit_progress(&window, "Checking Chocolatey", 0.0, "2min");
+
+    let choco = Command::new("choco")
+        .arg("--version")
+        .stderr(std::process::Stdio::piped())
+        .output();
+
+    if choco.is_err() && !install_chocolatey(&window) {
+        return;
+    }
+
+    check_and_install(&window, "ffmpeg", "-version", 33.33, "1min 12s");
+    check_and_install(&window, "yt-dlp", "--version", 66.66, "30s");
+
+    // Ensure the final progress reaches 100%
+    emit_progress(&window, "All installations completed", 100.0, "0s");
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -65,7 +89,8 @@ fn main() {
             reset_timer,
             stop_timer,
             add_episode,
-            dec_episode
+            dec_episode,
+            get_dependencies
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,21 +1,22 @@
 import Image from "next/image";
 import {ReactElement, useEffect, useState} from "react";
 import TimerPage from "@/pages/watchalong";
+import YtDlp from "@/pages/ytdl";
 
 export default function HomePage() {
     const [tool, setTool] = useState<"watchalong" | "ytdl" | null>(null);
     const [selectedTool, setSelectedTool] = useState<ReactElement | null>(null);
-
+    
     useEffect(() => {
         if (tool === "watchalong") {
             setSelectedTool(<TimerPage/>);
         } else if (tool === "ytdl") {
-            setSelectedTool(<div>Youtube Downloader</div>);
+            setSelectedTool(<YtDlp/>);
         } else {
             setSelectedTool(null);
         }
     }, [tool]);
-
+    
     return (
         <div className="flex flex-col w-screen h-screen bg-brand-background-blue">
             <header
