@@ -6,6 +6,12 @@ class TauriYtdlpApi {
         console.log("Verifying dependencies")
         return invoke("get_dependencies");
     }
+    
+    static async GetVideoInfo(url: string) {
+        const {invoke} = await import("@tauri-apps/api")
+        console.log("Getting video info")
+        return invoke("fetch_video", {url});
+    }
 }
 
 class YtdlpEventListener {

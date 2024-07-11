@@ -6,6 +6,8 @@ use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 use tauri::Window;
+
+use crate::ytdl::downloads::get_video_info;
 use crate::ytdl::get_deps::{check_and_install, emit_progress, install_chocolatey};
 
 static GLOBAL_TIMER: Lazy<Arc<Mutex<Option<watchalong::timer::Timer>>>> =
@@ -80,6 +82,12 @@ fn get_dependencies(window: Window) {
     emit_progress(&window, "All installations completed", 100.0, "0s");
 }
 
+#[tauri::command]
+fn fetch_video(url: String) -> Result<(String, String, String, String), String> {
+    let video_info = get_video_info(&url);
+    Ok((video_info.title, video_info.ext, video_info.thumbnail, video_info.uploader))
+}
+
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
@@ -90,7 +98,8 @@ fn main() {
             stop_timer,
             add_episode,
             dec_episode,
-            get_dependencies
+            get_dependencies,
+            fetch_video
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

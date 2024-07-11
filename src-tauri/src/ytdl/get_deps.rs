@@ -97,7 +97,7 @@ pub fn install_package(window: &Window, package: &str, percentage: f64, eta: &st
     }
 }
 
-pub(crate) fn check_and_install(window: &Window, package: &str, check_arg: &str, percentage: f64, eta: &str) {
+pub fn check_and_install(window: &Window, package: &str, check_arg: &str, percentage: f64, eta: &str) {
     let output = Command::new(package)
         .arg(check_arg)
         .stderr(std::process::Stdio::piped())

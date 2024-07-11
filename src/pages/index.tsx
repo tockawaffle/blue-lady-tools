@@ -45,7 +45,9 @@ export default function HomePage() {
                     ))}
                 </div>
             </header>
-            <main className="flex flex-col justify-center items-center w-full h-full mt-16 mb-8">
+            <main className={`flex flex-col justify-center items-center w-full h-${
+               (tool === "watchalong") ? "full" : "fit"
+            } mt-16 mb-8`}>
                 {selectedTool}
             </main>
             <footer
