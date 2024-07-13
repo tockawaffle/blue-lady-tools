@@ -4,14 +4,14 @@ use std::time::Duration;
 use crate::watchalong::read_file::read_file;
 use tauri::Window;
 
-pub struct Timer {
+pub(crate) struct Timer {
     path: String,
     stop_flag: Arc<Mutex<bool>>,
     is_running: Arc<Mutex<bool>>
 }
 
 impl Timer {
-    pub fn new(path: &str) -> Self {
+    pub(crate) fn new(path: &str) -> Self {
         Timer {
             path: path.to_string(),
             stop_flag: Arc::new(Mutex::new(false)),
@@ -19,7 +19,7 @@ impl Timer {
         }
     }
 
-    pub fn start(&self, window: Window) {
+    pub(crate) fn start(&self, window: Window) {
 
         if *self.is_running.lock().unwrap() {
             println!("Timer already running");
@@ -67,7 +67,7 @@ impl Timer {
         });
     }
 
-    pub fn stop(&self) {
+    pub(crate) fn stop(&self) {
         *self.stop_flag.lock().unwrap() = true;
     }
 }

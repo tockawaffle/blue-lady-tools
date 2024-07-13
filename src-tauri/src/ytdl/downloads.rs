@@ -29,11 +29,11 @@ struct DownloadStructure {
 }
 
 #[derive(PartialEq, Debug)]
-pub struct VideoInfo {
-    pub title: String,
-    pub ext: String,
-    pub thumbnail: String,
-    pub uploader: String,
+pub(crate) struct VideoInfo {
+    pub(crate) title: String,
+    pub(crate) ext: String,
+    pub(crate) thumbnail: String,
+    pub(crate) uploader: String,
 }
 
 fn get_video_type(url: &str) -> Result<VideoType, Box<dyn Error>> {
@@ -62,7 +62,7 @@ fn get_video_formats(user_format: Option<&str>) -> VideoFormats {
     }
 }
 
-fn download_video(url: &str, format: Option<&str>, path: String, unique_folders: bool, download_thumbnail: bool, write_url_link: bool) -> Result<bool, Box<dyn Error>> {
+pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, unique_folders: bool, download_thumbnail: bool, write_url_link: bool) -> Result<bool, Box<dyn Error>> {
     let video_type = get_video_type(url).unwrap();
     let formats = get_video_formats(format);
 
@@ -84,7 +84,7 @@ fn download_video(url: &str, format: Option<&str>, path: String, unique_folders:
         }
     }
 
-    let video_info = get_video_info(url);
+    let video_info = get_video_info(url).expect("Failed to get video info");
 
     if unique_folders && video_type != VideoType::Playlist {
         ytdlp_args.push_str(" --output \"");
@@ -98,7 +98,8 @@ fn download_video(url: &str, format: Option<&str>, path: String, unique_folders:
         // Use the default output format
         ytdlp_args.push_str(" --output \"");
         ytdlp_args.push_str(&path);
-        if (video_type == VideoType::Playlist) {
+
+        if video_type == VideoType::Playlist {
             ytdlp_args.push_str("/%(playlist)s/%(title)s.%(ext)s");
         } else {
             ytdlp_args.push_str("/%(title)s.%(ext)s");
@@ -127,7 +128,7 @@ fn download_video(url: &str, format: Option<&str>, path: String, unique_folders:
     }
 }
 
-pub fn get_video_info(url: &str) -> VideoInfo {
+pub(crate) fn get_video_info(url: &str) -> Result<VideoInfo, Box<dyn Error>> {
     let video_info = Command::new("yt-dlp")
         .arg("--print")
         .arg("title")
@@ -141,15 +142,19 @@ pub fn get_video_info(url: &str) -> VideoInfo {
         .output()
         .expect("Failed to get video info");
 
+    if !video_info.status.success() {
+        return Err("Failed to get video info".into());
+    }
+
     let video_info = String::from_utf8_lossy(&video_info.stdout);
     let video_info = video_info.split("\n").collect::<Vec<&str>>();
 
-    VideoInfo {
+    Ok(VideoInfo {
         title: video_info[0].to_string(),
         ext: video_info[1].to_string(),
         thumbnail: video_info[2].to_string(),
         uploader: video_info[3].to_string(),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -200,7 +205,8 @@ mod tests {
             thumbnail: "https://i.ytimg.com/vi/-qr9HbVPG4s/maxresdefault.jpg".to_string(),
             uploader: "Ritsu Matsuno".to_string(),
         };
-        assert_eq!(result, should_result_in);
+
+        assert_eq!(result.unwrap(), should_result_in);
     }
 
     #[test]

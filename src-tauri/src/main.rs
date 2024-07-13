@@ -1,17 +1,25 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::error::Error;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
-use tauri::Window;
+use tauri::{State, Window};
+use tauri::async_runtime::spawn;
 
-use crate::ytdl::downloads::get_video_info;
+use crate::ytdl::downloads::{download_video, get_video_info};
 use crate::ytdl::get_deps::{check_and_install, emit_progress, install_chocolatey};
 
 static GLOBAL_TIMER: Lazy<Arc<Mutex<Option<watchalong::timer::Timer>>>> =
     Lazy::new(|| Arc::new(Mutex::new(None)));
+
+#[derive(Default)]
+struct AppState {
+    download_in_progress: Arc<Mutex<bool>>,
+}
+
 mod watchalong;
 mod ytdl;
 
@@ -85,7 +93,66 @@ fn get_dependencies(window: Window) {
 #[tauri::command]
 fn fetch_video(url: String) -> Result<(String, String, String, String), String> {
     let video_info = get_video_info(&url);
-    Ok((video_info.title, video_info.ext, video_info.thumbnail, video_info.uploader))
+    match video_info {
+        Ok(video_info) => Ok((
+            video_info.title,
+            video_info.ext,
+            video_info.thumbnail,
+            video_info.uploader,
+        )),
+        Err(e) => {
+            Err(*Box::from(e.to_string()))
+        }
+    }
+}
+
+#[tauri::command]
+async fn download_video_command(
+    url: String,
+    format: Option<String>,
+    path: String,
+    unique_folders: bool,
+    download_thumbnail: bool,
+    write_url_link: bool,
+    state: State<'_, AppState>,
+    window: tauri::Window,
+) -> Result<bool, String> {
+    let download_in_progress = Arc::clone(&state.download_in_progress);
+
+    {
+        let mut in_progress = download_in_progress.lock().unwrap();
+        if *in_progress {
+            return Err("Another download is already in progress".to_string());
+        }
+        *in_progress = true;
+    }
+
+    let window_clone = window.clone();
+    let download_in_progress_clone = Arc::clone(&download_in_progress);
+
+    spawn(async move {
+        let result = download_video(&url, format.as_deref(), path, unique_folders, download_thumbnail, write_url_link);
+        match result {
+            Ok(_) => window_clone.emit("download_complete", true).unwrap(),
+            Err(e) => window_clone.emit("download_error", e.to_string()).unwrap(),
+        }
+
+        let mut in_progress = download_in_progress_clone.lock().unwrap();
+        *in_progress = false;
+    });
+
+    Ok(true)
+}
+
+
+#[tauri::command]
+fn resize_window(width: f64, height: f64, window: Window) {
+    window.set_size(
+        tauri::LogicalSize {
+            width,
+            height,
+        }
+    ).expect("Failed to resize window");
 }
 
 fn main() {
@@ -99,7 +166,9 @@ fn main() {
             add_episode,
             dec_episode,
             get_dependencies,
-            fetch_video
+            download_video_command,
+            fetch_video,
+            resize_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

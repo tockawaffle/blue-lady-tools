@@ -12,12 +12,35 @@ class TauriYtdlpApi {
         console.log("Getting video info")
         return invoke("fetch_video", {url});
     }
+    
+    // fn download_video(url: String, format: Option<String>, path: String, unique_folders: bool, download_thumbnail: bool, write_url_link: bool) -> Result<bool, Box<dyn Error>> {
+    static async DownloadVideo(
+        {
+            url,
+            path,
+            uniqueFolders,
+            downloadThumbnail,
+            writeUrlLink,
+            format,
+        }: {
+            url: string,
+            path: string,
+            uniqueFolders: boolean,
+            downloadThumbnail: boolean,
+            writeUrlLink: boolean,
+            format?: string,
+        }
+    ) {
+        const {invoke} = await import("@tauri-apps/api")
+        console.log("Downloading video")
+        return invoke("download_video_command", {url, format, path, uniqueFolders, downloadThumbnail, writeUrlLink});
+    }
 }
 
 class YtdlpEventListener {
     private unlisten: (() => void) | null = null;
     
-    constructor(public event: "ytdlp_deps_progress", public callback: (event: Event<unknown>) => void) {
+    constructor(public event: "ytdlp_deps_progress" | "download_progress", public callback: (event: Event<unknown>) => void) {
     }
     
     async listen() {

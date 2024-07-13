@@ -16,7 +16,7 @@ struct ProgressError {
     error: String,
 }
 
-pub fn emit_progress(window: &Window, step: &str, percentage: f64, eta: &str) {
+pub(crate) fn emit_progress(window: &Window, step: &str, percentage: f64, eta: &str) {
     let progress = Progress {
         step: step.to_string(),
         percentage,
@@ -26,7 +26,7 @@ pub fn emit_progress(window: &Window, step: &str, percentage: f64, eta: &str) {
     window.emit("ytdlp_deps_progress", progress).unwrap();
 }
 
-pub fn emit_error(window: &Window, step: &str, error_message: &str) {
+pub(crate) fn emit_error(window: &Window, step: &str, error_message: &str) {
     let error = ProgressError {
         step: step.to_string(),
         error: error_message.to_string(),
@@ -40,7 +40,7 @@ pub fn emit_error(window: &Window, step: &str, error_message: &str) {
     window.emit("ytdlp_deps_progress", progress).unwrap();
 }
 
-pub fn install_chocolatey(window: &Window) -> bool {
+pub(crate) fn install_chocolatey(window: &Window) -> bool {
     emit_progress(window, "Installing Chocolatey", 0.0, "2min");
 
     let status = Command::new("powershell")
@@ -77,7 +77,7 @@ pub fn install_chocolatey(window: &Window) -> bool {
     }
 }
 
-pub fn install_package(window: &Window, package: &str, percentage: f64, eta: &str) {
+pub(crate) fn install_package(window: &Window, package: &str, percentage: f64, eta: &str) {
     emit_progress(window, &format!("Installing {}", package), percentage, eta);
 
     let status = Command::new("powershell")
@@ -97,7 +97,7 @@ pub fn install_package(window: &Window, package: &str, percentage: f64, eta: &st
     }
 }
 
-pub fn check_and_install(window: &Window, package: &str, check_arg: &str, percentage: f64, eta: &str) {
+pub(crate) fn check_and_install(window: &Window, package: &str, check_arg: &str, percentage: f64, eta: &str) {
     let output = Command::new(package)
         .arg(check_arg)
         .stderr(std::process::Stdio::piped())
