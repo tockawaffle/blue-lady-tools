@@ -6,13 +6,13 @@ class TauriYtdlpApi {
         console.log("Verifying dependencies")
         return invoke("get_dependencies");
     }
-    
+
     static async GetVideoInfo(url: string) {
         const {invoke} = await import("@tauri-apps/api")
         console.log("Getting video info")
         return invoke("fetch_video", {url});
     }
-    
+
     // fn download_video(url: String, format: Option<String>, path: String, unique_folders: bool, download_thumbnail: bool, write_url_link: bool) -> Result<bool, Box<dyn Error>> {
     static async DownloadVideo(
         {
@@ -35,23 +35,30 @@ class TauriYtdlpApi {
         console.log("Downloading video")
         return invoke("download_video_command", {url, format, path, uniqueFolders, downloadThumbnail, writeUrlLink});
     }
+
+    static async GetDefaultPath() {
+        const {invoke} = await import("@tauri-apps/api")
+        console.log("Getting default path")
+        return invoke("get_default_path");
+
+    }
 }
 
 class YtdlpEventListener {
     private unlisten: (() => void) | null = null;
-    
-    constructor(public event: "ytdlp_deps_progress" | "download_progress", public callback: (event: Event<unknown>) => void) {
+
+    constructor(public event: "ytdlp_deps_progress" | "download_progress" | "download_complete" | "download_error", public callback: (event: Event<unknown>) => void) {
     }
-    
+
     async listen() {
-        
+
         const {listen} = await import("@tauri-apps/api/event")
-        
+
         this.unlisten = await listen(this.event as string, (event) => {
             this.callback(event)
         })
     }
-    
+
     async stop() {
         if (this.unlisten) {
             this.unlisten()

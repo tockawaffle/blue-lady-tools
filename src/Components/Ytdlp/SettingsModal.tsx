@@ -115,7 +115,7 @@ export default function SettingsModal(
                                 </div>
                             ))
                         }
-                        
+
                         <div className={"flex flex-col justify-start items-center w-full"}>
                             <label
                                 htmlFor={"custom_path"}

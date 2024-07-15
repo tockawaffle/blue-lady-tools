@@ -1,9 +1,11 @@
-import {Box, Fade, LinearProgress} from "@mui/material";
+import { Box, Fade, LinearProgress } from "@mui/material";
 
-export default function DepsInstallModal(
-    deps: { step: string; percentage: number; eta: string },
-    completed: boolean
-) {
+type DepsInstallModalProps = {
+    deps: { step: string; percentage: number; eta: string };
+    completed: boolean;
+};
+
+export default function DepsInstallModal({ deps, completed }: DepsInstallModalProps) {
     return (
         <Fade in={!completed}>
             <Box
@@ -24,9 +26,9 @@ export default function DepsInstallModal(
                 <Box className={"flex flex-col justify-center items-center"}>
                     <h2 className={"text-lg font-semibold text-brand-letters"}>{deps.step}</h2>
                     <h2 className={"text-lg font-semibold text-brand-letters"}>{deps.percentage.toString()}%</h2>
-                    <LinearProgress variant={"determinate"} value={deps.percentage as number}/>
+                    <LinearProgress variant={"determinate"} value={deps.percentage as number} />
                 </Box>
             </Box>
         </Fade>
-    )
+    );
 }

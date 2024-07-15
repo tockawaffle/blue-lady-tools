@@ -12,7 +12,7 @@ export default function GetVideoType(videoUrl: string): VideoType | null {
         [/https?:\/\/(www\.)?youtube\.com\/watch\?v=[^&]+&live/, VideoType.Livestream],
         [/https?:\/\/(www\.)?youtube\.com\/watch\?v=/, VideoType.Video]
     ];
-    
+
     for (const [pattern, type] of patterns) {
         if (pattern.test(videoUrl)) {
             return type;

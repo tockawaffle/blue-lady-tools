@@ -1,4 +1,6 @@
+use std::error::Error;
 use std::process::Command;
+
 use serde::{Deserialize, Serialize};
 use tauri::Window;
 
@@ -40,7 +42,7 @@ pub(crate) fn emit_error(window: &Window, step: &str, error_message: &str) {
     window.emit("ytdlp_deps_progress", progress).unwrap();
 }
 
-pub(crate) fn install_chocolatey(window: &Window) -> bool {
+pub(crate) fn install_chocolatey(window: &Window) -> Result<bool, Box<dyn Error>> {
     emit_progress(window, "Installing Chocolatey", 0.0, "2min");
 
     let status = Command::new("powershell")
@@ -62,22 +64,22 @@ pub(crate) fn install_chocolatey(window: &Window) -> bool {
             match choco {
                 Ok(_) => {
                     emit_progress(window, "Chocolatey installed", 33.33, "1min 12s");
-                    true
+                    Ok(true)
                 }
-                Err(_) => {
+                Err(e) => {
                     emit_error(window, "Chocolatey installation", "Failed to install Chocolatey");
-                    false
+                    return Err(format!("Failed to install Chocolatey: {}", e.to_string()).into());
                 }
             }
         }
-        Err(_) => {
+        Err(e) => {
             emit_error(window, "Chocolatey installation", "Failed to execute installation process");
-            false
+            return Err(format!("Failed to execute installation process: {}", e.to_string()).into());
         }
     }
 }
 
-pub(crate) fn install_package(window: &Window, package: &str, percentage: f64, eta: &str) {
+pub(crate) fn install_package(window: &Window, package: &str, percentage: f64, eta: &str) -> Result<(), Box<dyn Error>> {
     emit_progress(window, &format!("Installing {}", package), percentage, eta);
 
     let status = Command::new("powershell")
@@ -90,14 +92,16 @@ pub(crate) fn install_package(window: &Window, package: &str, percentage: f64, e
             // Sleep for a minute to allow the installation to complete
             std::thread::sleep(std::time::Duration::from_secs(60));
             emit_progress(window, &format!("{} installed", package), percentage + 33.33, "30s");
+            Ok(())
         }
-        Err(_) => {
+        Err(e) => {
             emit_error(window, &format!("{} installation", package), "Failed to execute installation process");
+            return Err(format!("Failed to execute installation process: {}", e.to_string()).into());
         }
     }
 }
 
-pub(crate) fn check_and_install(window: &Window, package: &str, check_arg: &str, percentage: f64, eta: &str) {
+pub(crate) fn check_and_install(window: &Window, package: &str, check_arg: &str, percentage: f64, eta: &str) -> Result<(), Box<dyn Error>> {
     let output = Command::new(package)
         .arg(check_arg)
         .stderr(std::process::Stdio::piped())
@@ -106,9 +110,17 @@ pub(crate) fn check_and_install(window: &Window, package: &str, check_arg: &str,
     match output {
         Ok(_) => {
             emit_progress(window, &format!("{} is already installed", package), percentage, eta);
+            Ok(())
         }
         Err(_) => {
-            install_package(window, package, percentage, eta);
+            let pkg_install = install_package(window, package, percentage, eta);
+            match pkg_install {
+                Ok(_) => { Ok(()) }
+                Err(e) => {
+                    emit_error(window, &format!("{} installation", package), &e.to_string());
+                    return Err(format!("Failed to install {}: {}", package, e.to_string()).into());
+                }
+            }
         }
     }
 }

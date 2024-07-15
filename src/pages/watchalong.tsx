@@ -10,18 +10,18 @@ export default function TimerPage() {
     const [start, setStart] = useState<boolean>(false);
     const [addEpisode, setAddEpisode] = useState<boolean>(false);
     const [decEpisode, setDecEpisode] = useState<boolean>(false);
-    
+
     const {TauriTimerApi, TimerEventListener} = TauriApi.Timer;
-    
+
     const handleTimerEvent = (event: Event<unknown>) => {
         const [minutes, seconds] = (event.payload as string).split(":").map(Number);
         setMinutes(minutes);
         setSeconds(seconds);
     };
-    
+
     useEffect(() => {
         const timerEventListener = new TimerEventListener("time_update", handleTimerEvent);
-        
+
         if (start) {
             TauriTimerApi.TauriStartTimer("resources/watchalong.txt").catch((err) => {
                 console.error("Error starting timer:", err);
@@ -33,12 +33,12 @@ export default function TimerPage() {
             });
             timerEventListener.stop();
         }
-        
+
         return () => {
             timerEventListener.stop();
         };
     }, [start]);
-    
+
     useEffect(() => {
         if (addEpisode) {
             TauriTimerApi.TauriAddEpisode("resources/watchalong.txt").then(() => {
@@ -56,7 +56,7 @@ export default function TimerPage() {
             });
         }
     }, [addEpisode, decEpisode, episode]);
-    
+
     const handleResetTimer = () => {
         TauriTimerApi.TauriResetTimer("resources/watchalong.txt")
             .then(() => {
@@ -75,7 +75,7 @@ export default function TimerPage() {
                 console.error("Error resetting timer:", err);
             });
     };
-    
+
     const handleResetFile = () => {
         TauriTimerApi.TauriResetFile("resources/watchalong.txt")
             .then(() => {
@@ -94,8 +94,8 @@ export default function TimerPage() {
                 console.error("Error resetting file:", err);
             });
     };
-    
-    
+
+
     useEffect(() => {
         TauriTimerApi.TauriReadFile("resources/watchalong.txt").then((data: string[]) => {
             const [episode, time] = data;
@@ -107,7 +107,7 @@ export default function TimerPage() {
             console.error("Error reading file:", err);
         });
     }, []);
-    
+
     return (
         <div className="flex flex-col justify-center items-center">
             <div className="flex flex-col justify-center items-center m-2">

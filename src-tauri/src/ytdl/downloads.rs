@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::path::PathBuf;
 use std::process::Command;
 
 use regex::Regex;
@@ -62,6 +63,7 @@ fn get_video_formats(user_format: Option<&str>) -> VideoFormats {
     }
 }
 
+
 pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, unique_folders: bool, download_thumbnail: bool, write_url_link: bool) -> Result<bool, Box<dyn Error>> {
     let video_type = get_video_type(url).unwrap();
     let formats = get_video_formats(format);
@@ -70,14 +72,17 @@ pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, uniq
         return Err("Playlist download is not supported yet".into());
     }
 
-    let mut ytdlp_args: String = String::new();
+    let mut ytdlp_args: Vec<String> = Vec::new();
 
     match formats {
         VideoFormats::AudioOnly => {
-            ytdlp_args.push_str("--extract-audio --audio-format mp3");
+            ytdlp_args.push("--extract-audio".into());
+            ytdlp_args.push("--audio-format".into());
+            ytdlp_args.push("mp3".into());
         }
         VideoFormats::VideoOnly => {
-            ytdlp_args.push_str("--format mp4");
+            ytdlp_args.push("--format".into());
+            ytdlp_args.push("mp4".into());
         }
         VideoFormats::VideoAndAudio => {
             // Since this is the default, we don't need to do anything
@@ -86,47 +91,45 @@ pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, uniq
 
     let video_info = get_video_info(url).expect("Failed to get video info");
 
-    if unique_folders && video_type != VideoType::Playlist {
-        ytdlp_args.push_str(" --output \"");
-        ytdlp_args.push_str(&path);
-        ytdlp_args.push_str("/");
-        ytdlp_args.push_str(&video_info.title);
-        ytdlp_args.push_str(".");
-        ytdlp_args.push_str(&video_info.ext);
-        ytdlp_args.push_str("\"");
-    } else {
-        // Use the default output format
-        ytdlp_args.push_str(" --output \"");
-        ytdlp_args.push_str(&path);
+    let mut output_path = PathBuf::from(path);
 
-        if video_type == VideoType::Playlist {
-            ytdlp_args.push_str("/%(playlist)s/%(title)s.%(ext)s");
-        } else {
-            ytdlp_args.push_str("/%(title)s.%(ext)s");
-        }
+    if unique_folders && video_type != VideoType::Playlist {
+        output_path.push(&video_info.title);
     }
 
+    if video_type == VideoType::Playlist {
+        output_path.push("%(playlist)s");
+        output_path.push("%(title)s.%(ext)s");
+    } else {
+        output_path.push("%(title)s.%(ext)s");
+    }
+
+    ytdlp_args.push("--output".into());
+    ytdlp_args.push(output_path.to_str().unwrap().into());
+
     if download_thumbnail {
-        ytdlp_args.push_str(" --write-thumbnail");
+        ytdlp_args.push("--write-thumbnail".into());
     }
 
     if write_url_link {
-        ytdlp_args.push_str(" --write-url-link");
+        ytdlp_args.push("--write-url-link".into());
     }
 
-    ytdlp_args.push_str(&*format!(" {}", url).to_string());
+    ytdlp_args.push(url.into());
 
     let output = Command::new("yt-dlp")
-        .args(ytdlp_args.split_whitespace())
+        .args(&ytdlp_args)
         .output()
-        .expect("Failed to download video");
+        .unwrap();
 
     if output.status.success() {
         Ok(true)
     } else {
+        println!("{}", String::from_utf8_lossy(&output.stderr));
         Err("Failed to download video".into())
     }
 }
+
 
 pub(crate) fn get_video_info(url: &str) -> Result<VideoInfo, Box<dyn Error>> {
     let video_info = Command::new("yt-dlp")

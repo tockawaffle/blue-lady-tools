@@ -6,7 +6,7 @@ import YtDlp from "@/pages/ytdl";
 export default function HomePage() {
     const [tool, setTool] = useState<"watchalong" | "ytdl" | null>(null);
     const [selectedTool, setSelectedTool] = useState<ReactElement | null>(null);
-    
+
     useEffect(() => {
         if (tool === "watchalong") {
             setSelectedTool(<TimerPage/>);
@@ -16,7 +16,7 @@ export default function HomePage() {
             setSelectedTool(null);
         }
     }, [tool]);
-    
+
     return (
         <div className="flex flex-col w-screen h-screen bg-brand-background-blue">
             <header
@@ -46,7 +46,7 @@ export default function HomePage() {
                 </div>
             </header>
             <main className={`flex flex-col justify-center items-center w-full h-${
-               (tool === "watchalong") ? "full" : "fit"
+                (tool === "watchalong") ? "full" : "fit"
             } mt-16 mb-8`}>
                 {selectedTool}
             </main>

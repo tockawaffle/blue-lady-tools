@@ -1,4 +1,4 @@
-import {LinearProgress, TextField, Tooltip} from "@mui/material";
+import {TextField, Tooltip} from "@mui/material";
 import Image from "next/image";
 
 type MainContentProps = {
@@ -10,6 +10,7 @@ type MainContentProps = {
     setSettingsOpen: (value: boolean) => void,
     handleDownload: () => void
     downloadInProgress: boolean
+    downloadComplete: boolean
 }
 
 export default function MainContent(
@@ -21,7 +22,8 @@ export default function MainContent(
         loading,
         setSettingsOpen,
         handleDownload,
-        downloadInProgress
+        downloadInProgress,
+        downloadComplete
     }: MainContentProps
 ) {
     return (
@@ -33,15 +35,16 @@ export default function MainContent(
                     htmlFor={"video_url"}
                     className={"text-sm font-semibold text-brand-letters text-start w-full mb-1 ml-1"}
                 >
-                    videoUrl do Video
+                    Url do Video
                 </label>
                 <TextField
                     error={!!error}
                     helperText={error}
+                    disabled={loading || downloadInProgress || downloadComplete}
                     className={"bg-brand-background-accent w-full rounded-lg"}
                     id="video_url"
                     variant="outlined"
-                    placeholder="videoUrl do Video"
+                    placeholder="Url do Video"
                     value={videoUrl}
                     onChange={(e) => {
                         setVideoUrl(e.target.value);
@@ -50,64 +53,82 @@ export default function MainContent(
                 />
             </div>
             {loading ? (
-                <div className={"flex flex-col justify-center items-center mt-4"}>
-                    <h2 className={"text-lg font-semibold text-brand-letters"}>Loading...</h2>
-                    <LinearProgress/>
+                <div
+                    className={"flex flex-row justify-center items-center mt-4 text-lg font-semibold text-brand-letters"}>
+                    Carregando
+                    <Image alt={""} src={"icons/dots_bounce.svg"} className={"ml-1"} width={24} height={24}/>
                 </div>
             ) : videoInfo ? (
-                <div className={"flex flex-col justify-center items-center mt-4"}>
-                    <Image src={videoInfo.thumbnail} width={320} height={180} alt={"Thumbnail"}
-                           unoptimized/>
-                    <h2 className={"text-lg font-semibold text-brand-letters mb-1"}>{videoInfo.title}</h2>
-                    <h2 className={"text-lg font-semibold text-brand-letters"}>{videoInfo.uploader}</h2>
-                    <div className={"flex flex-row justify-evenly items-center mt-2"}>
-                        <Tooltip title={"Configurações"}>
+                    <div className={"flex flex-col justify-center items-center mt-4"}>
+                        <Image src={videoInfo.thumbnail} width={320} height={180} alt={"Thumbnail"}
+                               unoptimized/>
+                        <h2 className={"text-lg font-semibold text-brand-letters mb-1"}>{videoInfo.title}</h2>
+                        <h2 className={"text-lg font-semibold text-brand-letters"}>{videoInfo.uploader}</h2>
+                        <div className={"flex flex-row justify-evenly items-center mt-2"}>
+                            <Tooltip title={"Configurações"}>
+                                <button
+                                    onClick={() => {
+                                        setSettingsOpen(true);
+                                    }}
+                                >
+                                    <Image
+                                        src={"/icons/settings.svg"}
+                                        className={"mr-4"}
+                                        width={24}
+                                        height={24}
+                                        alt={"Download Icon"}
+                                    />
+                                </button>
+                            </Tooltip>
                             <button
+                                className={"timer-buttons"}
                                 onClick={() => {
-                                    setSettingsOpen(true);
+                                    handleDownload();
                                 }}
                             >
-                                <Image
-                                    src={"/icons/settings.svg"}
-                                    className={"mr-4"}
-                                    width={24}
-                                    height={24}
-                                    alt={"Download Icon"}
-                                />
+                                <div className={"flex flex-row justify-evenly items-center h-full"}>
+                                    Download
+                                    <Image
+                                        src={"/icons/download.svg"}
+                                        className={"mx-1"}
+                                        width={24}
+                                        height={24}
+                                        alt={"Download Icon"}
+                                    />
+                                </div>
                             </button>
-                        </Tooltip>
-                        <button
-                            className={"timer-buttons"}
-                            onClick={() => {
-                                handleDownload();
-                            }}
-                        >
-                            <div className={"flex flex-row justify-evenly items-center h-full"}>
-                                Download
-                                <Image
-                                    src={"/icons/download.svg"}
-                                    className={"mx-1"}
-                                    width={24}
-                                    height={24}
-                                    alt={"Download Icon"}
-                                />
-                            </div>
-                        </button>
+                        </div>
+                        {
+                            downloadInProgress && (
+                                <>
+                                    <div className={"w-64 h-[2px] bg-brand-background-accent m-2"}/>
+                                    <div className={"flex flex-row justify-center items-center"}>
+                                        <h2 className={"text-lg font-semibold text-brand-letters"}>Baixando</h2>
+                                        <Image alt={""} src={"icons/dots_bounce.svg"} className={"ml-1"} width={24}
+                                               height={24}/>
+                                    </div>
+                                </>
+                            )
+                        }
+                        {
+                            downloadComplete && (
+                                <>
+                                    <div className={"w-64 h-[2px] bg-brand-background-accent m-2"}/>
+                                    <div className={"flex flex-row justify-center items-center"}>
+                                        <h2 className={"text-lg font-semibold text-brand-letters"}>Download Completo</h2>
+                                    </div>
+                                </>
+                            )
+                        }
                     </div>
-                    {
-                        downloadInProgress && (
-                            <div className={"flex flex-col justify-center items-center mt-2"}>
-                                <h2 className={"text-lg font-semibold text-brand-letters"}>Downloading...</h2>
-                            </div>
-                        )
-                    }
-                </div>
-            
-            ) : (
-                <div className={"flex flex-col justify-center items-center mt-2"}>
-                    <h2 className={"text-lg font-semibold text-brand-letters"}>Nenhum vídeo encontrado</h2>
-                </div>
-            )}
+
+                )
+                :
+                (
+                    <div className={"flex flex-col justify-center items-center mt-2"}>
+                        <h2 className={"text-lg font-semibold text-brand-letters"}>Nenhum vídeo encontrado</h2>
+                    </div>
+                )}
         </div>
     )
 }
