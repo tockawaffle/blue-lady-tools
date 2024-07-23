@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/timed.iml" filepath="$PROJECT_DIR$/.idea/timed.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/blue-lady-tools.iml" filepath="$PROJECT_DIR$/.idea/blue-lady-tools.iml" />
     </modules>
   </component>
 </project>

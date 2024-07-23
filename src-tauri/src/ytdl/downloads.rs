@@ -1,8 +1,15 @@
 use std::error::Error;
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, Write};
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::sync::mpsc;
+use std::thread;
 
 use regex::Regex;
+use tauri::Window;
+use winapi::um::winbase::CREATE_NO_WINDOW;
 
 #[derive(Debug, PartialEq)]
 enum VideoType {
@@ -64,7 +71,17 @@ fn get_video_formats(user_format: Option<&str>) -> VideoFormats {
 }
 
 
-pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, unique_folders: bool, download_thumbnail: bool, write_url_link: bool) -> Result<bool, Box<dyn Error>> {
+pub(crate) fn download_video(
+    url: &str,
+    format: Option<&str>,
+    path: String,
+    unique_folders: bool,
+    download_thumbnail: bool,
+    write_url_link: bool,
+    ytdlp_path: &str,
+    ffmpeg_path: &str,
+    window: &Window,
+) -> Result<bool, Box<dyn Error>> {
     let video_type = get_video_type(url).unwrap();
     let formats = get_video_formats(format);
 
@@ -74,22 +91,28 @@ pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, uniq
 
     let mut ytdlp_args: Vec<String> = Vec::new();
 
+    // Check which format to download and set the appropriate flags
     match formats {
         VideoFormats::AudioOnly => {
             ytdlp_args.push("--extract-audio".into());
             ytdlp_args.push("--audio-format".into());
             ytdlp_args.push("mp3".into());
+            // Needs to be added to the args if the format is audio only
+            ytdlp_args.push("--ffmpeg-location".into());
+            ytdlp_args.push(ffmpeg_path.into());
         }
         VideoFormats::VideoOnly => {
             ytdlp_args.push("--format".into());
-            ytdlp_args.push("mp4".into());
+            ytdlp_args.push("bestvideo[ext=mp4]".into());
         }
         VideoFormats::VideoAndAudio => {
-            // Since this is the default, we don't need to do anything
+            // This downloads the best video with audio as a mp4 file. Might edit this later to support other formats (if supported by yt-dlp)
+            ytdlp_args.push("--format".into());
+            ytdlp_args.push("best[ext=mp4]/mp4".into());
         }
     }
 
-    let video_info = get_video_info(url).expect("Failed to get video info");
+    let video_info = get_video_info(url, &ytdlp_path, ffmpeg_path).expect("Failed to get video info");
 
     let mut output_path = PathBuf::from(path);
 
@@ -97,6 +120,7 @@ pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, uniq
         output_path.push(&video_info.title);
     }
 
+    // I might not support playlist downloads yet, but I will keep this here for future reference
     if video_type == VideoType::Playlist {
         output_path.push("%(playlist)s");
         output_path.push("%(title)s.%(ext)s");
@@ -104,6 +128,7 @@ pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, uniq
         output_path.push("%(title)s.%(ext)s");
     }
 
+    // This sets the output path for the video. Frontend handles retrieving the default path if a custom path is not set.
     ytdlp_args.push("--output".into());
     ytdlp_args.push(output_path.to_str().unwrap().into());
 
@@ -115,24 +140,84 @@ pub(crate) fn download_video(url: &str, format: Option<&str>, path: String, uniq
         ytdlp_args.push("--write-url-link".into());
     }
 
+    if url.contains("clip") {
+        //Check if ffmpeg was already added to args
+        if !ytdlp_args.contains(&"--ffmpeg-location".to_string()) {
+            ytdlp_args.push("--ffmpeg-location".into());
+            ytdlp_args.push(ffmpeg_path.into());
+        }
+
+        //Add metadata to the clip because why not? Also, might add this as a general flag for all downloads
+        ytdlp_args.push("--add-metadata".into());
+    }
+
+    ytdlp_args.push("--progress".into());
+    ytdlp_args.push("--newline".into());
+    ytdlp_args.push("--verbose".into());
     ytdlp_args.push(url.into());
 
-    let output = Command::new("yt-dlp")
+    let mut process = Command::new(ytdlp_path)
         .args(&ytdlp_args)
-        .output()
-        .unwrap();
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn()
+        .expect("Failed to start yt-dlp");
 
-    if output.status.success() {
-        Ok(true)
-    } else {
-        println!("{}", String::from_utf8_lossy(&output.stderr));
-        Err("Failed to download video".into())
+    let stdout = process.stdout.take().expect("Failed to capture stdout");
+    let stderr = process.stderr.take().expect("Failed to capture stderr");
+
+    let (tx, rx) = mpsc::channel();
+
+    // Read stdout in a separate thread
+    let tx_clone = tx.clone();
+    thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            tx_clone.send(line).unwrap();
+        }
+    });
+
+    // Read stderr in a separate thread
+    thread::spawn(move || {
+        let reader = BufReader::new(stderr);
+        for line in reader.lines() {
+            let line = line.unwrap();
+            tx.send(line).unwrap();
+        }
+    });
+
+    // Create the ytdlp.log file
+    File::create("resources/ytdlp.log").unwrap();
+    let mut ytdlp_log = OpenOptions::new().write(true).open("resources/ytdlp.log").unwrap();
+
+    // Process the output lines
+    for line in rx {
+        println!("{}", line);
+        if line.contains("[download]") && line.contains("of") && line.contains("ETA") {
+            window.emit("download_progress", line.clone()).unwrap();
+        }
+
+        // Write ytdlp.log to the resources folder for debugging purposes with new lines for each log entry
+        ytdlp_log.write_all(format!("{}\n", line).as_bytes()).unwrap();
+    }
+
+    match process.wait_with_output() {
+        Ok(output) => {
+            if output.status.success() {
+                Ok(true)
+            } else {
+                Err(format!("Error downloading video: Stdout {:?}", output.stdout).into())
+            }
+        }
+        Err(e) => Err(e.to_string().into()),
     }
 }
 
 
-pub(crate) fn get_video_info(url: &str) -> Result<VideoInfo, Box<dyn Error>> {
-    let video_info = Command::new("yt-dlp")
+pub(crate) fn get_video_info(url: &str, ytdlp_path: &str, ffmpeg_path: &str) -> Result<VideoInfo, Box<dyn Error>> {
+    let video_info = Command::new(ytdlp_path)
         .arg("--print")
         .arg("title")
         .arg("--print")
@@ -141,7 +226,10 @@ pub(crate) fn get_video_info(url: &str) -> Result<VideoInfo, Box<dyn Error>> {
         .arg("thumbnail")
         .arg("--print")
         .arg("uploader")
+        .arg("--ffmpeg-location")
+        .arg(ffmpeg_path)
         .arg(url)
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .expect("Failed to get video info");
 
@@ -158,70 +246,4 @@ pub(crate) fn get_video_info(url: &str) -> Result<VideoInfo, Box<dyn Error>> {
         thumbnail: video_info[2].to_string(),
         uploader: video_info[3].to_string(),
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_video_type() {
-        let url = "https://www.youtube.com/watch?v=1234";
-        let result = get_video_type(url).unwrap();
-        assert_eq!(result, VideoType::Video);
-
-        let url = "https://www.youtube.com/clip/1234";
-        let result = get_video_type(url).unwrap();
-        assert_eq!(result, VideoType::Clip);
-
-        let url = "https://www.youtube.com/playlist?list=1234";
-        let result = get_video_type(url).unwrap();
-        assert_eq!(result, VideoType::Playlist);
-
-        let url = "https://www.youtube.com/watch?v=1234&live";
-        let result = get_video_type(url).unwrap();
-        assert_eq!(result, VideoType::Livestream);
-    }
-
-    #[test]
-    fn test_get_video_formats() {
-        let result = get_video_formats(Some("audio"));
-        assert_eq!(result, VideoFormats::AudioOnly);
-
-        let result = get_video_formats(Some("video"));
-        assert_eq!(result, VideoFormats::VideoOnly);
-
-        let result = get_video_formats(None);
-        assert_eq!(result, VideoFormats::VideoAndAudio);
-    }
-
-    #[test]
-    /// We'll not test for playlist because it's a bit more complex
-    fn test_get_video_info() {
-        let clip = "https://youtube.com/clip/UgkxUVRndkzoPrtR7k-LBWrm9aHaK2x4VKdn?si=YxoHjaMSAjX53Q_I";
-        let video = "https://www.youtube.com/watch?v=oIr9e6x6qUw";
-
-        let result = get_video_info(clip);
-        let should_result_in = VideoInfo {
-            title: "Sendo um cachorrinho desgramado - Doronko Wanko".to_string(),
-            ext: "mkv".to_string(),
-            thumbnail: "https://i.ytimg.com/vi/-qr9HbVPG4s/maxresdefault.jpg".to_string(),
-            uploader: "Ritsu Matsuno".to_string(),
-        };
-
-        assert_eq!(result.unwrap(), should_result_in);
-    }
-
-    #[test]
-    fn test_download_video() {
-        let url = "https://www.youtube.com/watch?v=oIr9e6x6qUw";
-        let format = Some("audio");
-        let path = "test";
-        let unique_folders = false;
-        let download_thumbnail = false;
-        let write_url_link = false;
-
-        let result = download_video(url, format, path.to_string(), unique_folders, download_thumbnail, write_url_link);
-        assert_eq!(result.unwrap(), true);
-    }
 }

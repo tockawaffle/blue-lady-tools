@@ -2,8 +2,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use crate::watchalong::commands::{add_episode, dec_episode, read_file, reset_file, reset_timer, start_timer, stop_timer};
-use crate::ytdl::commands::{download_video_command, fetch_video, get_default_download_path, get_dependencies, resize_window};
+use crate::ytdl::commands::{download_video_command, fetch_video, get_default_download_path, resize_window};
 use crate::ytdl::commands::AppState;
+use crate::ytdl::deps::{download_deps, verify_deps};
 
 #[macro_use]
 mod watchalong;
@@ -22,11 +23,12 @@ fn main() {
             stop_timer,
             add_episode,
             dec_episode,
-            get_dependencies,
             download_video_command,
             fetch_video,
             resize_window,
-            get_default_download_path
+            get_default_download_path,
+            download_deps,
+            verify_deps
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

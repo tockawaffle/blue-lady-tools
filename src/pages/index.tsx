@@ -1,68 +1,40 @@
-import Image from "next/image";
-import {ReactElement, useEffect, useState} from "react";
-import TimerPage from "@/pages/watchalong";
-import YtDlp from "@/pages/ytdl";
+import {useState} from "react"
 
-export default function HomePage() {
-    const [tool, setTool] = useState<"watchalong" | "ytdl" | null>(null);
-    const [selectedTool, setSelectedTool] = useState<ReactElement | null>(null);
+import Settings from "@/components/main/Settings";
+import Ytdlp from "@/components/main/Ytdlp";
+import WatchAlong from "@/components/main/WatchAlong";
+import Header from "@/components/main/Header";
+import Footer from "@/components/main/Footer";
 
-    useEffect(() => {
-        if (tool === "watchalong") {
-            setSelectedTool(<TimerPage/>);
-        } else if (tool === "ytdl") {
-            setSelectedTool(<YtDlp/>);
-        } else {
-            setSelectedTool(null);
-        }
-    }, [tool]);
+type Tools = "ytdlp" | "watchalong" | "settings"
 
+export default function Component() {
+    
+    const [selectedTool, setSelectedTool] = useState<Tools>("ytdlp")
+    
     return (
-        <div className="flex flex-col w-screen h-screen bg-brand-background-blue">
-            <header
-                className="flex flex-row justify-center items-center w-full border-b-2 border-b-brand-background-accent fixed top-0 h-16 bg-brand-background-blue">
-                <div className="flex flex-row justify-center items-center hover:cursor-default select-none m-2">
-                    <Image src="/logos/blue_rose.svg" width={50} height={50} alt="Logo"/>
-                    <span
-                        className="text-brand-letters font-semibold text-sm italic text-center">Blue Lady's Tools</span>
-                </div>
-                <div className="flex flex-row justify-end items-center w-full">
-                    {[
-                        {name: "Timer Watchalong", item: "watchalong"},
-                        {name: "Youtube Downloader", item: "ytdl"},
-                    ].map((item, index) => (
-                        <button
-                            key={index}
-                            disabled={tool === item.item}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                setTool(item.item as "watchalong" | "ytdl");
-                            }}
-                            className={"primary-button"}
-                        >
-                            {item.name}
-                        </button>
-                    ))}
-                </div>
+        <div className="flex flex-col min-h-screen">
+            <header className="bg-background border-b">
+                <Header selectedTool={selectedTool} setSelectedTool={setSelectedTool}/>
             </header>
-            <main className={`flex flex-col justify-center items-center w-full h-${
-                (tool === "watchalong") ? "full" : "fit"
-            } mt-16 mb-8`}>
-                {selectedTool}
+            <main className="flex-1 bg-muted/40 py-8">
+                <div className="container px-4 sm:px-6">
+                    {selectedTool === "watchalong" && (
+                        <WatchAlong/>
+                    )}
+                    {selectedTool === "ytdlp" && (
+                        <Ytdlp/>
+                    )}
+                    {selectedTool === "settings" && (
+                        <Settings/>
+                    )}
+                </div>
             </main>
-            <footer
-                className="select-none flex flex-row justify-center items-center w-full border-t-2 border-t-brand-background-accent fixed bottom-0 h-8 bg-brand-background-blue">
-                <div className={"flex justify-start items-center "}>
-                    <span className="text-brand-letters font-semibold text-2xs italic text-center ml-1">
-                        v0.1.0
-                    </span>
-                </div>
-                <div className="flex flex-row justify-center items-center w-full">
-                    <span className="text-brand-letters font-semibold text-xs italic text-center">
-                        where imagination blooms in rare hues.
-                    </span>
-                </div>
+            <footer className="bg-background border-t select-none">
+                <Footer/>
             </footer>
         </div>
-    );
+    )
 }
+
+

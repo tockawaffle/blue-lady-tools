@@ -1,13 +1,15 @@
-use std::sync::{Arc, Mutex};
 use std::{fs, thread};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use crate::watchalong::read_file::read_file;
+
 use tauri::Window;
+
+use crate::watchalong::read_file::read_file;
 
 pub(crate) struct Timer {
     path: String,
     stop_flag: Arc<Mutex<bool>>,
-    is_running: Arc<Mutex<bool>>
+    is_running: Arc<Mutex<bool>>,
 }
 
 impl Timer {
@@ -20,9 +22,7 @@ impl Timer {
     }
 
     pub(crate) fn start(&self, window: Window) {
-
         if *self.is_running.lock().unwrap() {
-            println!("Timer already running");
             return; // If already running, do nothing
         }
 

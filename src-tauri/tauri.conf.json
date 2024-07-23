@@ -7,8 +7,8 @@
         "distDir": "../out"
     },
     "package": {
-        "productName": "BLT",
-        "version": "0.2.0"
+        "productName": "Blue Lady Tools",
+        "version": "0.2.6"
     },
     "tauri": {
         "allowlist": {
@@ -28,7 +28,7 @@
             "icon": [
                 "icons/icon.ico"
             ],
-            "identifier": "com.blt",
+            "identifier": "com.tockanest.blue-ladys-tools",
             "longDescription": "",
             "macOS": {
                 "entitlements": null,
@@ -37,7 +37,9 @@
                 "providerShortName": null,
                 "signingIdentity": null
             },
-            "resources": [],
+            "resources": [
+                "resources/**/*"
+            ],
             "shortDescription": "",
             "targets": "all",
             "windows": {
@@ -57,8 +59,8 @@
                 "fullscreen": false,
                 "width": 780,
                 "minWidth": 780,
-                "height": 480,
-                "minHeight": 480,
+                "height": 720,
+                "minHeight": 720,
                 "resizable": true,
                 "title": "Blue Lady's Tools"
             }

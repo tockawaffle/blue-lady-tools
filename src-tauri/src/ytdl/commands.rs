@@ -1,83 +1,36 @@
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 
-use tauri::{State, Window};
+use tauri::{AppHandle, State, Window};
 use tauri::async_runtime::spawn;
 
+use crate::ytdl::deps::{invoke_ffmpeg_from_local, invoke_ytdlp_from_local};
 use crate::ytdl::downloads::{download_video, get_video_info};
-use crate::ytdl::get_deps::{check_and_install, emit_error, emit_progress, install_chocolatey};
 
 #[derive(Default)]
 pub(crate) struct AppState {
     download_in_progress: Arc<Mutex<bool>>,
 }
-#[tauri::command]
-pub(crate) fn get_dependencies(window: Window) {
-    let window_clone = window.clone();
-
-    spawn(async move {
-        emit_progress(&window_clone, "Checking Chocolatey", 0.0, "2min");
-
-        let choco = Command::new("choco")
-            .arg("--version")
-            .stderr(std::process::Stdio::piped())
-            .output();
-
-        match choco {
-            Ok(output) => {
-                if !output.status.success() {
-                    match install_chocolatey(&window_clone) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            emit_error(&window_clone, "Chocolatey installation", &e.to_string());
-                            emit_progress(&window_clone, "Exiting...", 100.0, "0s");
-                        }
-                    }
-                }
-            }
-            Err(e) => {
-                emit_error(&window_clone, "Chocolatey check", &e.to_string());
-                match install_chocolatey(&window_clone) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        emit_error(&window_clone, "Chocolatey installation", &e.to_string());
-                        emit_progress(&window_clone, "Exiting...", 100.0, "0s");
-                    }
-                }
-            }
-        }
-
-        let install_ffmpeg = check_and_install(&window_clone, "ffmpeg", "-version", 33.33, "1min 12s");
-        match install_ffmpeg {
-            Ok(_) => emit_progress(&window_clone, "FFmpeg installed", 33.33, "1min 12s"),
-            Err(e) => {
-                emit_error(&window_clone, "FFmpeg installation", &e.to_string());
-                emit_progress(&window_clone, "FFmpeg installation failed", 33.33, "1min 12s");
-                emit_progress(&window_clone, "Exiting...", 100.0, "0s");
-                return;
-            }
-        }
-
-        let install_ytdlp = check_and_install(&window_clone, "yt-dlp", "--version", 66.66, "30s");
-        match install_ytdlp {
-            Ok(_) => emit_progress(&window_clone, "yt-dlp installed", 66.66, "30s"),
-            Err(e) => {
-                emit_error(&window_clone, "yt-dlp installation", &e.to_string());
-                emit_progress(&window_clone, "yt-dlp installation failed", 66.66, "30s");
-                emit_progress(&window_clone, "Exiting...", 100.0, "0s");
-                return;
-            }
-        }
-
-        // Ensure the final progress reaches 100%
-        emit_progress(&window_clone, "All installations completed", 100.0, "0s");
-    });
-}
 
 
 #[tauri::command]
-pub(crate) fn fetch_video(url: String) -> Result<(String, String, String, String), String> {
-    let video_info = get_video_info(&url);
+pub(crate) fn fetch_video(url: String, handle: AppHandle) -> Result<(String, String, String, String), String> {
+    let ffmpeg_path = match invoke_ffmpeg_from_local(handle.clone()) {
+        Ok(path) => path,
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+    let ytdlp_path = match invoke_ytdlp_from_local(handle) {
+        Ok(path) => path,
+        Err(e) => {
+            return Err(e);
+        }
+    };
+
+
+    let video_info = get_video_info(&url, &ytdlp_path, &ffmpeg_path);
+
     match video_info {
         Ok(video_info) => Ok((
             video_info.title,
@@ -100,7 +53,8 @@ pub(crate) async fn download_video_command(
     download_thumbnail: bool,
     write_url_link: bool,
     state: State<'_, AppState>, // Ensure the same AppState is used
-    window: tauri::Window,
+    window: Window,
+    handle: AppHandle,
 ) -> Result<bool, String> {
     let download_in_progress = Arc::clone(&state.download_in_progress);
 
@@ -115,8 +69,27 @@ pub(crate) async fn download_video_command(
     let window_clone = window.clone();
     let download_in_progress_clone = Arc::clone(&download_in_progress);
 
+    // Get the path to the ffmpeg executable
+    let ffmpeg_path = match invoke_ffmpeg_from_local(handle.clone()) {
+        Ok(path) => path,
+        Err(e) => {
+            let mut in_progress = download_in_progress.lock().unwrap();
+            *in_progress = false;
+            return Err(e);
+        }
+    };
+
+    let ytdlp_path = match invoke_ytdlp_from_local(handle) {
+        Ok(path) => path,
+        Err(e) => {
+            let mut in_progress = download_in_progress.lock().unwrap();
+            *in_progress = false;
+            return Err(e);
+        }
+    };
+
     spawn(async move {
-        let result = download_video(&url, format.as_deref(), path, unique_folders, download_thumbnail, write_url_link);
+        let result = download_video(&url, format.as_deref(), path, unique_folders, download_thumbnail, write_url_link, &ytdlp_path, &ffmpeg_path, &window_clone);
         match result {
             Ok(_) => window_clone.emit("download_complete", true).unwrap(),
             Err(e) => window_clone.emit("download_error", e.to_string()).unwrap(),
