@@ -70,13 +70,14 @@ export default function Ytdlp() {
         speed: string;
         eta: string;
     }>({
-        downloaded: "",
+        downloaded: "0%",
         percentage: 0,
-        total: "",
-        speed: "",
-        eta: ""
+        total: "0MiB",
+        speed: "0MiB/s",
+        eta: "Sem previsão"
     });
     const [downloadStarted, setDownloadStarted] = useState<boolean>(false);
+    const [downloadComplete, setDownloadComplete] = useState<boolean>(false);
     
     const [customPath, setCustomPath] = useState<string>("");
     
@@ -156,6 +157,7 @@ export default function Ytdlp() {
                     speed: "",
                     eta: ""
                 })
+                setDownloadComplete(true);
             });
             
             const errorEventListener = new TauriApi.Ytdlp.YtdlpEventListener("download_error", (data: any) => {
@@ -166,7 +168,7 @@ export default function Ytdlp() {
             
             const downloadProgressListener = new TauriApi.Ytdlp.YtdlpEventListener("download_progress", (data: any) => {
                 
-                const regex = /\[download]\s+([\d.]+%)\s+of\s+~\s+([\d.]+MiB)\s+at\s+([\d.]+MiB\/s)\s+ETA\s+(\d{2}:\d{2})/;
+                const regex = /\[download]\s+\d+\.\d+% of\s+[\d.]+MiB at\s+(?:Unknown B\/s|[\d.]+MiB\/s) ETA (?:Unknown|\d{2}:\d{2})/;
                 const match = data.payload.match(regex);
                 if (match) {
                     const percentage = match[1];
@@ -260,7 +262,8 @@ export default function Ytdlp() {
                                         <div key={id} className="flex flex-col space-y-2">
                                             <div className="flex items-center space-x-3 m-2">
                                                 <Label htmlFor={id}>{label}</Label>
-                                                <Checkbox disabled={disabled} id={id} checked={state} onClick={() => setState(!state)}/>
+                                                <Checkbox disabled={disabled} id={id} checked={state}
+                                                          onClick={() => setState(!state)}/>
                                             </div>
                                         </div>
                                     ))}
@@ -313,11 +316,16 @@ export default function Ytdlp() {
                     }
                     {
                         (Object.keys(videoInfo || {}).length > 0 && !startSearch) && (
-                            <div className="mt-4 w-full h-fit max-w-md flex flex-col justify-start items-start">
+                            <div className="mt-4 w-full h-fit max-w-[650px] flex flex-col justify-start items-start">
                                 <div
-                                    className={"flex flex-col justify-center items-center text-center w-full h-full border rounded"}>
+                                    className={"flex flex-col justify-center items-center text-center w-full  h-full border rounded"}>
                                     <h1 className="text-lg font-bold">{videoInfo?.title}</h1>
                                     <span className="text-muted-foreground">{videoInfo?.uploader}</span>
+                                    {
+                                        url.includes("clip") && (
+                                            <span className={"text-destructive text-sm italic"}>Este é um clipe, a thumbnail será da live e não do clipe.</span>
+                                        )
+                                    }
                                     <Image src={videoInfo?.thumbnail as string} alt={""} width={350} height={350}
                                            className={"rounded m-2"}/>
                                     <Button
@@ -333,7 +341,7 @@ export default function Ytdlp() {
                                             <div className={"flex flex-col justify-center items-center m-2"}>
                                                 <div className={"flex flex-row justify-start items-start m-1"}>
                                                     <span className={"text-muted-foreground"}>
-                                                        Baixado: {downloadData.downloaded ?? "0%"} de {downloadData.total ?? ""} - {downloadData.speed ?? "? MB/s"} - ETA: {downloadData.eta ?? "?"}
+                                                        Baixado: {downloadData.downloaded} de {downloadData.total} - {downloadData.speed} - ETA: {downloadData.eta}
                                                     </span>
                                                 </div>
                                                 <Progress.Root className="ProgressRoot" value={downloadData.percentage}>
@@ -342,6 +350,15 @@ export default function Ytdlp() {
                                                         style={{transform: `translateX(-${100 - downloadData.percentage}%)`}}
                                                     />
                                                 </Progress.Root>
+                                            </div>
+                                        ) || downloadComplete && (
+                                            <div className={"flex flex-row justify-center items-center"}>
+                                                <span className={"text-green-500"}>Download completo!</span>
+                                                {/*
+                                                    TODO: Open folder icon
+                                                    This is a feature that I want to implement in the future,
+                                                    but for now it's not a priority and Tauri doesn't natively support it.
+                                                */}
                                             </div>
                                         )
                                     }
@@ -353,4 +370,11 @@ export default function Ytdlp() {
             </div>
         </div>
     );
+}
+
+export function OpenIcon(props: SVGProps<SVGSVGElement>) {
+    return (<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" {...props}>
+        <path fill="#E8EBE4"
+              d="M4.5 3A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13h7a1.5 1.5 0 0 0 1.5-1.5V9.27a.5.5 0 0 1 1 0v2.23a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 11.5v-7A2.5 2.5 0 0 1 4.5 2h2.23a.5.5 0 0 1 0 1zm4.27-.5a.5.5 0 0 1 .5-.5h4.23a.5.5 0 0 1 .5.5v4.23a.5.5 0 0 1-1 0V3.708L9.623 7.084a.5.5 0 1 1-.707-.707L12.293 3H9.269a.5.5 0 0 1-.5-.5"></path>
+    </svg>);
 }

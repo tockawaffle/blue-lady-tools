@@ -5,10 +5,11 @@ class TauriApi {
     public static Timer = TimerApi;
     public static Ytdlp = YtdlpApi;
     
-    public static async ResizeWindow(width: number, height: number) {
-        const {invoke} = await import("@tauri-apps/api")
-        return invoke("resize_window", {width, height});
+    private static async command<T>(command: string, args: any): Promise<T> {
+        const {invoke} = await import('@tauri-apps/api/core');
+        return invoke(command, args);
     }
+    
 }
 
 export {

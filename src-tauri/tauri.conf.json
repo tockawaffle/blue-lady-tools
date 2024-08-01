@@ -3,57 +3,44 @@
     "build": {
         "beforeBuildCommand": "npm run build",
         "beforeDevCommand": "npm run dev",
-        "devPath": "http://localhost:3000",
-        "distDir": "../out"
+        "frontendDist": "../out",
+        "devUrl": "http://localhost:3000"
     },
-    "package": {
-        "productName": "Blue Lady Tools",
-        "version": "0.2.6"
-    },
-    "tauri": {
-        "allowlist": {
-            "dialog": {
-                "open": true,
-                "save": true
-            }
+    "bundle": {
+        "active": true,
+        "category": "DeveloperTool",
+        "copyright": "",
+        "targets": "all",
+        "externalBin": [],
+        "icon": [
+            "icons/icon.ico"
+        ],
+        "windows": {
+            "certificateThumbprint": null,
+            "digestAlgorithm": "sha256",
+            "timestampUrl": ""
         },
-        "bundle": {
-            "active": true,
-            "category": "DeveloperTool",
-            "copyright": "",
+        "longDescription": "",
+        "macOS": {
+            "entitlements": null,
+            "exceptionDomain": "",
+            "frameworks": [],
+            "providerShortName": null,
+            "signingIdentity": null
+        },
+        "shortDescription": "",
+        "linux": {
             "deb": {
                 "depends": []
-            },
-            "externalBin": [],
-            "icon": [
-                "icons/icon.ico"
-            ],
-            "identifier": "com.tockanest.blue-ladys-tools",
-            "longDescription": "",
-            "macOS": {
-                "entitlements": null,
-                "exceptionDomain": "",
-                "frameworks": [],
-                "providerShortName": null,
-                "signingIdentity": null
-            },
-            "resources": [
-                "resources/**/*"
-            ],
-            "shortDescription": "",
-            "targets": "all",
-            "windows": {
-                "certificateThumbprint": null,
-                "digestAlgorithm": "sha256",
-                "timestampUrl": ""
             }
         },
-        "security": {
-            "csp": null
-        },
-        "updater": {
-            "active": false
-        },
+        "createUpdaterArtifacts": "v1Compatible"
+    },
+    "productName": "Blue Lady Tools",
+    "version": "0.2.6",
+    "identifier": "com.tockanest.blue-ladys-tools",
+    "plugins": {},
+    "app": {
         "windows": [
             {
                 "fullscreen": false,
@@ -64,6 +51,9 @@
                 "resizable": true,
                 "title": "Blue Lady's Tools"
             }
-        ]
+        ],
+        "security": {
+            "csp": null
+        }
     }
 }

@@ -2,7 +2,7 @@ use std::{fs, thread};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use tauri::Window;
+use tauri::{Emitter, Window};
 
 use crate::watchalong::read_file::read_file;
 

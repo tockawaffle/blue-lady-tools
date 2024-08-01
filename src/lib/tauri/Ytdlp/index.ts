@@ -1,16 +1,20 @@
 import type {Event} from "@tauri-apps/api/event";
 
 class TauriYtdlpApi {
+    private static async command<T>(command: string, args: any): Promise<T> {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return invoke(command, args);
+    }
+    
     static async GetDependencies() {
-        const {invoke} = await import("@tauri-apps/api")
         console.log("Verifying dependencies")
-        return invoke("get_dependencies");
+        return this.command("get_dependencies", {});
     }
     
     static async GetVideoInfo(url: string) {
-        const {invoke} = await import("@tauri-apps/api")
+        
         console.log("Getting video info")
-        return invoke("fetch_video", {url});
+        return this.command("fetch_video", {url});
     }
     
     
@@ -32,34 +36,34 @@ class TauriYtdlpApi {
             format?: string,
         }
     ) {
-        const {invoke} = await import("@tauri-apps/api")
+        
         console.log("Downloading video")
-        return invoke("download_video_command", {url, format, path, uniqueFolders, downloadThumbnail, writeUrlLink});
+        return this.command("download_video_command", {url, format, path, uniqueFolders, downloadThumbnail, writeUrlLink});
     }
     
     static async GetDefaultPath() {
-        const {invoke} = await import("@tauri-apps/api")
+        
         console.log("Getting default path")
-        return invoke("get_default_download_path");
+        return this.command("get_default_download_path", {});
         
     }
     
     static async VerifyDependencies() {
-        const {invoke} = await import("@tauri-apps/api")
+        
         console.log("Verifying dependencies")
-        return invoke("verify_deps");
+        return this.command("verify_deps", {});
     }
     
     static async DownloadDependencies() {
-        const {invoke} = await import("@tauri-apps/api")
+        
         console.log("Downloading dependencies")
-        return invoke("download_deps");
+        return this.command("download_deps", {});
     }
     
     static async GetFfmpegPath() {
-        const {invoke} = await import("@tauri-apps/api")
+        
         console.log("Getting default path")
-        return invoke("invoke_ffmpeg_from_local");
+        return this.command("invoke_ffmpeg_from_local", {});
     }
 }
 

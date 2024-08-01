@@ -24,12 +24,12 @@ export default function WatchAlong() {
         const timerEventListener = new TimerEventListener("time_update", handleTimerEvent);
         
         if (start) {
-            TauriTimerApi.TauriStartTimer("resources/watchalong.txt").catch((err) => {
+            TauriTimerApi.TauriStartTimer().catch((err) => {
                 console.error("Error starting timer:", err);
             });
             timerEventListener.listen();
         } else {
-            TauriTimerApi.TauriStopTimer("resources/watchalong.txt").catch((err) => {
+            TauriTimerApi.TauriStopTimer().catch((err) => {
                 console.error("Error stopping timer:", err);
             });
             timerEventListener.stop();
@@ -42,14 +42,14 @@ export default function WatchAlong() {
     
     useEffect(() => {
         if (addEpisode) {
-            TauriTimerApi.TauriAddEpisode("resources/watchalong.txt").then(() => {
+            TauriTimerApi.TauriAddEpisode().then(() => {
                 setAddEpisode(false);
                 setEpisode((prev) => prev + 1);
             }).catch((err) => {
                 console.error("Error adding episode:", err);
             });
         } else if (decEpisode) {
-            TauriTimerApi.TauriDecEpisode("resources/watchalong.txt").then(() => {
+            TauriTimerApi.TauriDecEpisode().then(() => {
                 setDecEpisode(false);
                 setEpisode((prev) => prev - 1);
             }).catch((err) => {
@@ -59,7 +59,7 @@ export default function WatchAlong() {
     }, [addEpisode, decEpisode, episode]);
     
     useEffect(() => {
-        TauriTimerApi.TauriReadFile("resources/watchalong.txt").then((data: string[]) => {
+        TauriTimerApi.TauriReadFile().then((data: string[]) => {
             const [episode, time] = data;
             setEpisode(parseInt(episode, 10));
             const [minutes, seconds] = time.split(":").map(Number);
@@ -69,11 +69,11 @@ export default function WatchAlong() {
     }, [])
     
     const handleResetTimer = () => {
-        TauriTimerApi.TauriResetTimer("resources/watchalong.txt")
+        TauriTimerApi.TauriResetTimer()
             .then(() => {
                 console.log("Timer reset successful");
                 // Update UI state after reset
-                return TauriTimerApi.TauriReadFile("resources/watchalong.txt");
+                return TauriTimerApi.TauriReadFile();
             })
             .then((data: string[]) => {
                 const [episode, time] = data;
@@ -88,11 +88,11 @@ export default function WatchAlong() {
     };
     
     const handleResetFile = () => {
-        TauriTimerApi.TauriResetFile("resources/watchalong.txt")
+        TauriTimerApi.TauriResetFile()
             .then(() => {
                 console.log("File reset successful");
                 // Update UI state after reset
-                return TauriTimerApi.TauriReadFile("resources/watchalong.txt");
+                return TauriTimerApi.TauriReadFile();
             })
             .then((data: string[]) => {
                 const [episode, time] = data;

@@ -1,9 +1,17 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use crate::watchalong::commands::{add_episode, dec_episode, read_file, reset_file, reset_timer, start_timer, stop_timer};
-use crate::ytdl::commands::{download_video_command, fetch_video, get_default_download_path, resize_window};
+use std::fs;
+use std::path::PathBuf;
+use tauri::Manager;
+use crate::watchalong::commands::{
+    add_episode, dec_episode, read_file, reset_file, reset_timer, start_timer, stop_timer,
+};
+use crate::watchalong::timer::Timer;
 use crate::ytdl::commands::AppState;
+use crate::ytdl::commands::{
+    download_video_command, fetch_video, get_default_download_path, resize_window,
+};
 use crate::ytdl::deps::{download_deps, verify_deps};
 
 #[macro_use]
@@ -12,8 +20,16 @@ mod watchalong;
 #[macro_use]
 mod ytdl;
 
+fn get_global_config_path(app_name: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let mut config_path = dirs::config_dir().expect("Failed to get config directory");
+    config_path.push(app_name);
+    fs::create_dir_all(&config_path)?; // Ensure the directory exists
+    Ok(config_path)
+}
+
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default()) // Manage the AppState here
         .invoke_handler(tauri::generate_handler![
             read_file,

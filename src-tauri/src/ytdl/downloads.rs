@@ -1,14 +1,14 @@
 use std::error::Error;
+use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use std::sync::mpsc;
-use std::thread;
 
 use regex::Regex;
-use tauri::Window;
+use tauri::{Emitter, Window};
+use tokio::sync::mpsc;
 use winapi::um::winbase::CREATE_NO_WINDOW;
 
 #[derive(Debug, PartialEq)]
@@ -19,11 +19,10 @@ enum VideoType {
     Video,
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum VideoFormats {
-    AudioOnly, // mp3
-    VideoOnly, // mp4
+    AudioOnly,     // mp3
+    VideoOnly,     // mp4
     VideoAndAudio, // Selected by default
 }
 
@@ -47,8 +46,14 @@ pub(crate) struct VideoInfo {
 fn get_video_type(url: &str) -> Result<VideoType, Box<dyn Error>> {
     let patterns = vec![
         (r"https?://(www\.)?youtube\.com/clip/", VideoType::Clip),
-        (r"https?://(www\.)?youtube\.com/playlist\?list=", VideoType::Playlist),
-        (r"https?://(www\.)?youtube\.com/watch\?v=[^&]+&live", VideoType::Livestream),
+        (
+            r"https?://(www\.)?youtube\.com/playlist\?list=",
+            VideoType::Playlist,
+        ),
+        (
+            r"https?://(www\.)?youtube\.com/watch\?v=[^&]+&live",
+            VideoType::Livestream,
+        ),
         (r"https?://(www\.)?youtube\.com/watch\?v=", VideoType::Video),
     ];
 
@@ -70,8 +75,7 @@ fn get_video_formats(user_format: Option<&str>) -> VideoFormats {
     }
 }
 
-
-pub(crate) fn download_video(
+pub(crate) async fn download_video(
     url: &str,
     format: Option<&str>,
     path: String,
@@ -112,7 +116,8 @@ pub(crate) fn download_video(
         }
     }
 
-    let video_info = get_video_info(url, &ytdlp_path, ffmpeg_path).expect("Failed to get video info");
+    let video_info =
+        get_video_info(url, &ytdlp_path, ffmpeg_path).expect("Failed to get video info");
 
     let mut output_path = PathBuf::from(path);
 
@@ -167,35 +172,46 @@ pub(crate) fn download_video(
     let stdout = process.stdout.take().expect("Failed to capture stdout");
     let stderr = process.stderr.take().expect("Failed to capture stderr");
 
-    let (tx, rx) = mpsc::channel();
+    let (tx, mut rx) = mpsc::channel::<String>(100);
 
     // Read stdout in a separate thread
     let tx_clone = tx.clone();
-    thread::spawn(move || {
+    tokio::spawn(async move {
         let reader = BufReader::new(stdout);
         for line in reader.lines() {
             let line = line.unwrap();
-            tx_clone.send(line).unwrap();
+            tx_clone.send(line).await.unwrap();
         }
     });
 
     // Read stderr in a separate thread
-    thread::spawn(move || {
+    tokio::spawn(async move {
         let reader = BufReader::new(stderr);
         for line in reader.lines() {
             let line = line.unwrap();
-            tx.send(line).unwrap();
+            tx.send(line).await.unwrap();
         }
     });
 
+    let app_resource_path = dirs::config_dir()
+        .expect("Failed to get config directory").join("Blue Lady's Tools");
+    ;
+    let ytdlp_log_path = app_resource_path.join("logs");
+
     // Create the ytdlp.log file
-    File::create("resources/ytdlp.log").unwrap();
-    let mut ytdlp_log = OpenOptions::new().write(true).open("resources/ytdlp.log").unwrap();
+    fs::create_dir_all(&ytdlp_log_path).expect("Failed to create FFMPEG directory");
+    let ytdlp_log_path = ytdlp_log_path.join("ytdlp.log");
+    File::create(&ytdlp_log_path).expect("Failed to create ytdlp.log");
+
+    let mut ytdlp_log = OpenOptions::new()
+        .write(true)
+        .open(&ytdlp_log_path)
+        .unwrap();
 
     // Process the output lines
-    for line in rx {
-        println!("{}", line);
+    while let Some(line) = rx.recv().await {
         if line.contains("[download]") && line.contains("of") && line.contains("ETA") {
+            println!("{}", line);
             window.emit("download_progress", line.clone()).unwrap();
         }
 
@@ -215,8 +231,11 @@ pub(crate) fn download_video(
     }
 }
 
-
-pub(crate) fn get_video_info(url: &str, ytdlp_path: &str, ffmpeg_path: &str) -> Result<VideoInfo, Box<dyn Error>> {
+pub(crate) fn get_video_info(
+    url: &str,
+    ytdlp_path: &str,
+    ffmpeg_path: &str,
+) -> Result<VideoInfo, Box<dyn Error>> {
     let video_info = Command::new(ytdlp_path)
         .arg("--print")
         .arg("title")

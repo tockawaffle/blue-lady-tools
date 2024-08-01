@@ -15,7 +15,13 @@ export default function Settings() {
     const [reinstallDeps, setReinstallDeps] = useState<boolean>(false);
     const [reinstallDepsError, setReinstallDepsError] = useState<string>("");
     const [verifyDeps, setVerifyDeps] = useState<boolean>(false);
-    const [verifyDepsError, setVerifyErrorDeps] = useState<string>("")
+    const [verifyDepsError, setVerifyErrorDeps] = useState<{
+        type: "error" | "success" | "",
+        message: string
+    }>({
+        type: "",
+        message: ""
+    })
     
     useEffect(() => {
         const theme = localStorage.getItem("theme");
@@ -27,7 +33,7 @@ export default function Settings() {
     async function handleFolderSelection() {
         if (typeof window !== "undefined") {
             try {
-                const {dialog} = await import("@tauri-apps/api");
+                const dialog = await import("@tauri-apps/plugin-dialog");
                 const selectedFolder = await dialog.open({
                     directory: true,
                     multiple: false,
@@ -51,6 +57,13 @@ export default function Settings() {
         };
         
         if (deps.ffmpeg.success && deps.ytdlp.success) {
+            if (verifyDepsError.type === "error") {
+                setVerifyErrorDeps({
+                    type: "success",
+                    message: "Dependências instaladas com sucesso."
+                })
+            }
+            
             return setReinstallDeps(false);
         } else {
             return setReinstallDepsError("Erro ao baixar as dependências. Por favor, faça manualmente.")
@@ -67,7 +80,10 @@ export default function Settings() {
         if (deps.ffmpeg && deps.ytdlp) {
             return setVerifyDeps(false);
         } else {
-            return setReinstallDepsError("Erro ao verificar as dependências. Por favor, reinstale.")
+            return setVerifyErrorDeps({
+                type: "error",
+                message: "Erro ao verificar as dependências. Por favor, reinstale."
+            })
         }
     }
     
@@ -87,13 +103,44 @@ export default function Settings() {
                     </DialogContent>
                 </Dialog>
                 <Dialog open={verifyDeps} modal>
-                    <DialogContent className={"flex flex-col justify-start items-start"}>
+                    <DialogContent className={"flex flex-col justify-start items-start no-close"}>
                         <h2 className="text-2xl font-bold">Verificando Dependências</h2>
-                        <div className={"flex flex-row justify-center items-center"}>
-                            <p className="text-muted-foreground">Aguarde enquanto verificamos as dependências do
-                                app.</p>
-                            <SvgSpinnersBarsRotateFade className="ml-4 h-8 w-8"/>
-                        </div>
+                        {
+                            verifyDepsError.type === "error" && (
+                                <div className={"flex flex-col justify-center items-center w-full"}>
+                                    <p className="text-red-500">Erro ao verificar as dependências. Por favor,
+                                        reinstale.</p>
+                                    <Button
+                                        onClick={() => {
+                                            handleDownloadDeps()
+                                        }}
+                                        variant="secondary" className="mt-4">
+                                        Reinstalar Dependências
+                                    </Button>
+                                </div>
+                            ) || verifyDepsError.type === "success" && (
+                                <div className={"flex flex-col justify-center items-center"}>
+                                    <p className="text-green-500">Dependências instaladas com sucesso.</p>
+                                    <Button
+                                        onClick={() => {
+                                            setVerifyErrorDeps({
+                                                type: "",
+                                                message: ""
+                                            })
+                                            setVerifyDeps(false)
+                                        }}
+                                        variant="secondary" className="mt-4">
+                                        Ok
+                                    </Button>
+                                </div>
+                            ) || (
+                                <div className={"flex flex-row justify-center items-center"}>
+                                    <p className="text-muted-foreground">Aguarde enquanto verificamos as dependências do
+                                        app.</p>
+                                    <SvgSpinnersBarsRotateFade className="ml-4 h-8 w-8"/>
+                                </div>
+                            )
+                        }
                     </DialogContent>
                 </Dialog>
             </div>
@@ -131,14 +178,13 @@ export default function Settings() {
                         <CardTitle>Youtube Downloader</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                        <div>
+                        <div className={"flex flex-col"}>
                             <Button
                                 onClick={() => {
                                     handleVerifyDeps()
                                 }}
                                 variant="secondary" className="w-[188px]">
                                 Verificar Dependências
-                                {verifyDepsError && <span className="text-red-500 ml-2"> - {verifyDepsError}</span>}
                             </Button>
                         </div>
                         <div>

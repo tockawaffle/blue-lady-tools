@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use tauri::{AppHandle, State, Window};
+use tauri::{AppHandle, Emitter, State, Window};
 use tauri::async_runtime::spawn;
 
 use crate::ytdl::deps::{invoke_ffmpeg_from_local, invoke_ytdlp_from_local};
@@ -11,9 +11,11 @@ pub(crate) struct AppState {
     download_in_progress: Arc<Mutex<bool>>,
 }
 
-
 #[tauri::command]
-pub(crate) fn fetch_video(url: String, handle: AppHandle) -> Result<(String, String, String, String), String> {
+pub(crate) fn fetch_video(
+    url: String,
+    handle: AppHandle,
+) -> Result<(String, String, String, String), String> {
     let ffmpeg_path = match invoke_ffmpeg_from_local(handle.clone()) {
         Ok(path) => path,
         Err(e) => {
@@ -28,7 +30,6 @@ pub(crate) fn fetch_video(url: String, handle: AppHandle) -> Result<(String, Str
         }
     };
 
-
     let video_info = get_video_info(&url, &ytdlp_path, &ffmpeg_path);
 
     match video_info {
@@ -38,9 +39,7 @@ pub(crate) fn fetch_video(url: String, handle: AppHandle) -> Result<(String, Str
             video_info.thumbnail,
             video_info.uploader,
         )),
-        Err(e) => {
-            Err(*Box::from(e.to_string()))
-        }
+        Err(e) => Err(*Box::from(e.to_string())),
     }
 }
 
@@ -89,8 +88,18 @@ pub(crate) async fn download_video_command(
     };
 
     spawn(async move {
-        let result = download_video(&url, format.as_deref(), path, unique_folders, download_thumbnail, write_url_link, &ytdlp_path, &ffmpeg_path, &window_clone);
-        match result {
+        let result = download_video(
+            &url,
+            format.as_deref(),
+            path,
+            unique_folders,
+            download_thumbnail,
+            write_url_link,
+            &ytdlp_path,
+            &ffmpeg_path,
+            &window_clone,
+        );
+        match result.await {
             Ok(_) => window_clone.emit("download_complete", true).unwrap(),
             Err(e) => window_clone.emit("download_error", e.to_string()).unwrap(),
         }
@@ -104,12 +113,9 @@ pub(crate) async fn download_video_command(
 
 #[tauri::command]
 pub(crate) fn resize_window(width: f64, height: f64, window: Window) {
-    window.set_size(
-        tauri::LogicalSize {
-            width,
-            height,
-        }
-    ).expect("Failed to resize window");
+    window
+        .set_size(tauri::LogicalSize { width, height })
+        .expect("Failed to resize window");
 }
 
 #[tauri::command]

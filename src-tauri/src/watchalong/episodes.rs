@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use tauri::Window;
+use tauri::{Emitter, Window};
 
 pub(crate) fn add_episode(path: String, window: Window) {
     let file = crate::watchalong::read_file::read_file(&path).unwrap();
