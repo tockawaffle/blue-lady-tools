@@ -9,6 +9,15 @@ class TauriApi {
         const {invoke} = await import('@tauri-apps/api/core');
         return invoke(command, args);
     }
+
+    public static async InvokeMainWindow() {
+        return this.command('invoke_main_window', {});
+    }
+
+    public static async GetVersion(): Promise<string> {
+        const {getVersion} = await import('@tauri-apps/api/app');
+        return await getVersion();
+    }
     
 }
 

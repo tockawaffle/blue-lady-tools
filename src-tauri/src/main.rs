@@ -3,7 +3,7 @@
 
 use std::fs;
 use std::path::PathBuf;
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 use crate::watchalong::commands::{
     add_episode, dec_episode, read_file, reset_file, reset_timer, start_timer, stop_timer,
 };
@@ -27,10 +27,18 @@ fn get_global_config_path(app_name: &str) -> Result<PathBuf, Box<dyn std::error:
     Ok(config_path)
 }
 
+#[tauri::command]
+fn invoke_main_window(app: AppHandle) {
+    let splash_window = app.get_webview_window("splashscreen").unwrap();
+    let main_window = app.get_webview_window("main").unwrap();
+    splash_window.close().unwrap();
+    main_window.show().unwrap();
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .manage(AppState::default()) // Manage the AppState here
+        .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             read_file,
             reset_file,
@@ -44,7 +52,8 @@ fn main() {
             resize_window,
             get_default_download_path,
             download_deps,
-            verify_deps
+            verify_deps,
+            invoke_main_window
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

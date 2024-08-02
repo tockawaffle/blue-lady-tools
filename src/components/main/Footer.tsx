@@ -1,4 +1,5 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
+import {TauriApi} from "@/lib/tauri";
 
 function ClockIcon(props: React.SVGProps<SVGSVGElement>) {
     return (
@@ -45,12 +46,25 @@ function PackageIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 export default function Footer() {
+
+    const [packageVersion, setPackageVersion] = useState("");
+
+    useEffect(() => {
+        if (typeof window !== undefined) {
+            TauriApi.GetVersion().then((version) => {
+                setPackageVersion(version);
+            })
+        }
+    }, [])
+
     return (
         <div
             className="container flex items-center justify-between h-12 px-4 sm:px-6 text-sm text-muted-foreground">
             <div className={"flex items-center"}>
                 <PackageIcon className="h-4 w-4 mr-1 inline-block"/>
-                Version 1.0.0
+                {
+                    packageVersion
+                }
             </div>
             <div className={"flex items-center"}>
                 where imagination blooms in rare hues

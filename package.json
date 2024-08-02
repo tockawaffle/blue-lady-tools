@@ -8,8 +8,7 @@
         "start": "next start",
         "lint": "next lint",
         "tauri": "tauri",
-        "tauri:build": "tauri build --release",
-        "tauri:build:debug": "tauri build --debug",
+        "tauri:build": "tauri build",
         "tauri:dev": "tauri dev"
     },
     "dependencies": {

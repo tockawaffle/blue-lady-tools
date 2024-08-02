@@ -1,10 +1,9 @@
 use std::{fs, thread};
+use std::io::Write;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use tauri::{Emitter, Window};
-
-use crate::watchalong::read_file::read_file;
 
 pub(crate) struct Timer {
     path: String,
@@ -31,10 +30,10 @@ impl Timer {
 
         let path = self.path.clone();
         let stop_flag = self.stop_flag.clone();
+        let file_content = self.read_file().expect("Error reading watchalong");
 
         thread::spawn(move || {
             // Read the watchalong and extract episode and time
-            let file_content = read_file(&path).expect("Error reading watchalong");
             let (mut minutes, mut seconds) = parse_time(&file_content.time);
 
             // Loop until the stop flag is set
@@ -65,6 +64,93 @@ impl Timer {
                 window.emit("time_update", Some(new_time.clone())).unwrap();
             }
         });
+    }
+
+    pub(crate) fn read_file(&self) -> Result<FileContent, Box<dyn std::error::Error>> {
+        let path = self.path.clone();
+
+        let content = fs::read_to_string(&path)?;
+        let mut lines = content.lines();
+        let episode_line = lines.next().expect("File is empty");
+        let time_line = lines.next().expect("Missing time line");
+        let episode = episode_line
+            .split_whitespace()
+            .nth(1)
+            .expect("Invalid episode line");
+        let time = time_line
+            .split_whitespace()
+            .nth(1)
+            .expect("Invalid time line");
+
+        Ok(FileContent {
+            episode: episode.to_string(),
+            time: time.to_string(),
+        })
+    }
+
+    pub(crate) fn add_episode(&self, window: Window) {
+        let file = self.read_file().expect("Error reading watchalong");
+        let episode = file.episode.parse::<i32>().unwrap();
+        let time = file.time;
+        let new_episode = episode + 1;
+        let new_time = format!(
+            "Episodio: {}\nTempo: {}",
+            new_episode, time
+        );
+
+        let mut file = std::fs::OpenOptions::new().write(true).open(&self.path).unwrap();
+        file.write_all(new_time.as_bytes()).unwrap();
+        // Close the watchalong
+        drop(file);
+
+        // Emit the new episode
+        window
+            .emit("episode_update", Some(new_episode.to_string()))
+            .unwrap();
+    }
+
+    pub(crate) fn dec_episode(&self, window: Window) {
+        let file = self.read_file().expect("Error reading watchalong");
+        let path = self.path.clone();
+        let episode = file.episode.parse::<i32>().unwrap();
+        let time = file.time;
+        let new_episode = episode - 1;
+        let new_time = format!(
+            "Episodio: {}\nTempo: {}",
+            new_episode, time
+        );
+
+        let mut file = std::fs::OpenOptions::new().write(true).open(path).unwrap();
+        file.write_all(new_time.as_bytes()).unwrap();
+        // Close the watchalong
+        drop(file);
+
+        // Emit the new episode
+        window
+            .emit("episode_update", Some(new_episode.to_string()))
+            .unwrap();
+    }
+
+    pub(crate) fn reset_file(&self) -> Result<(), std::io::Error> {
+        // Create the watchalong if it doesn't exist
+        fs::File::create(&self.path).unwrap();
+        // Set the default content of the watchalong
+        let default_label = "Episodio: 1\nTempo: 00:00";
+        let mut file = fs::OpenOptions::new().write(true).open(&self.path).unwrap();
+        file.write_all(default_label.as_bytes()).unwrap();
+        Ok(())
+    }
+
+    pub(crate) fn reset_timer(&self) -> Result<(), std::io::Error> {
+        // Get episode from the watchalong
+        let file = &self.read_file().expect("Error reading watchalong");
+        let episode = file.episode.parse::<i32>().unwrap();
+
+        // Set the default content of the watchalong
+        let default_label = format!("Episodio: {}\nTempo: 00:00", episode);
+        let mut file = std::fs::OpenOptions::new().write(true).open(&self.path).unwrap();
+        file.write_all(&default_label.as_bytes()).unwrap();
+        Ok(())
     }
 
     pub(crate) fn stop(&self) {

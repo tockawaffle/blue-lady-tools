@@ -8,7 +8,7 @@ import Footer from "@/components/main/Footer";
 
 type Tools = "ytdlp" | "watchalong" | "settings"
 
-export default function Component() {
+export default function HomePage() {
     
     const [selectedTool, setSelectedTool] = useState<Tools>("ytdlp")
     

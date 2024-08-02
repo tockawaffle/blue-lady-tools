@@ -1,4 +1,7 @@
 {
+    "productName": "Blue Lady Tools",
+    "version": "0.2.6",
+    "identifier": "com.tockanest.blue-ladys-tools",
     "$schema": "../node_modules/@tauri-apps/cli/schema.json",
     "build": {
         "beforeBuildCommand": "npm run build",
@@ -33,23 +36,30 @@
             "deb": {
                 "depends": []
             }
-        },
-        "createUpdaterArtifacts": "v1Compatible"
+        }
     },
-    "productName": "Blue Lady Tools",
-    "version": "0.2.6",
-    "identifier": "com.tockanest.blue-ladys-tools",
-    "plugins": {},
     "app": {
         "windows": [
             {
-                "fullscreen": false,
+                "label": "main",
                 "width": 780,
                 "minWidth": 780,
                 "height": 720,
                 "minHeight": 720,
                 "resizable": true,
-                "title": "Blue Lady's Tools"
+                "title": "Blue Lady's Tools",
+                "visible": false
+            },
+            {
+                "width": 780,
+                "minWidth": 780,
+                "height": 720,
+                "minHeight": 720,
+                "resizable": true,
+                "label": "splashscreen",
+                "url": "/splashscreen",
+                "title": "Blue Lady's Tools",
+                "visible": true
             }
         ],
         "security": {

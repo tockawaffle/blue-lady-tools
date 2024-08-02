@@ -19,27 +19,25 @@ export default function WatchAlong() {
         setMinutes(minutes);
         setSeconds(seconds);
     };
-    
-    useEffect(() => {
+
+
+    async function handleStart() {
         const timerEventListener = new TimerEventListener("time_update", handleTimerEvent);
-        
-        if (start) {
-            TauriTimerApi.TauriStartTimer().catch((err) => {
-                console.error("Error starting timer:", err);
-            });
-            timerEventListener.listen();
-        } else {
-            TauriTimerApi.TauriStopTimer().catch((err) => {
-                console.error("Error stopping timer:", err);
-            });
-            timerEventListener.stop();
-        }
-        
-        return () => {
-            timerEventListener.stop();
-        };
-    }, [start]);
-    
+
+        TauriTimerApi.TauriStartTimer().catch((err) => {
+            console.error("Error starting timer:", err);
+        });
+        timerEventListener.listen();
+    }
+
+    async function handleStop() {
+        TauriTimerApi.TauriStopTimer().then(() => {
+            console.log("Timer stopped successfully");
+        }).catch((err) => {
+            console.error("Error stopping timer:", err);
+        });
+    }
+
     useEffect(() => {
         if (addEpisode) {
             TauriTimerApi.TauriAddEpisode().then(() => {
@@ -130,7 +128,10 @@ export default function WatchAlong() {
                         <div className={"flex justify-center items-center"}>
                             <Button
                                 variant={"ghost"}
-                                onClick={() => setStart((prev) => !prev)}
+                                onClick={() => {
+                                    setStart((prev) => !prev)
+                                    if (!start) handleStart();
+                                }}
                                 className="shrink-0"
                                 disabled={start}
                             >
@@ -138,7 +139,10 @@ export default function WatchAlong() {
                             </Button>
                             <Button
                                 variant={"ghost"}
-                                onClick={() => setStart(false)}
+                                onClick={() => {
+                                    setStart(false)
+                                    handleStop();
+                                }}
                                 className="shrink-0"
                             >
                                 Parar

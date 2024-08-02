@@ -78,7 +78,10 @@ export default function Settings() {
         };
         
         if (deps.ffmpeg && deps.ytdlp) {
-            return setVerifyDeps(false);
+            return setVerifyErrorDeps({
+                type: "success",
+                message: "Dependências instaladas com sucesso."
+            })
         } else {
             return setVerifyErrorDeps({
                 type: "error",
@@ -119,7 +122,7 @@ export default function Settings() {
                                     </Button>
                                 </div>
                             ) || verifyDepsError.type === "success" && (
-                                <div className={"flex flex-col justify-center items-center"}>
+                                <div className={"flex flex-col justify-center items-center w-full"}>
                                     <p className="text-green-500">Dependências instaladas com sucesso.</p>
                                     <Button
                                         onClick={() => {
@@ -134,7 +137,7 @@ export default function Settings() {
                                     </Button>
                                 </div>
                             ) || (
-                                <div className={"flex flex-row justify-center items-center"}>
+                                <div className={"flex flex-row justify-center items-center w-full"}>
                                     <p className="text-muted-foreground">Aguarde enquanto verificamos as dependências do
                                         app.</p>
                                     <SvgSpinnersBarsRotateFade className="ml-4 h-8 w-8"/>

@@ -110,9 +110,10 @@ pub(crate) async fn download_video(
             ytdlp_args.push("bestvideo[ext=mp4]".into());
         }
         VideoFormats::VideoAndAudio => {
+            println!("Downloading video and audio");
             // This downloads the best video with audio as a mp4 file. Might edit this later to support other formats (if supported by yt-dlp)
             ytdlp_args.push("--format".into());
-            ytdlp_args.push("best[ext=mp4]/mp4".into());
+            ytdlp_args.push("bestvideo+bestaudio/mp4".into());
         }
     }
 
@@ -195,7 +196,6 @@ pub(crate) async fn download_video(
 
     let app_resource_path = dirs::config_dir()
         .expect("Failed to get config directory").join("Blue Lady's Tools");
-    ;
     let ytdlp_log_path = app_resource_path.join("logs");
 
     // Create the ytdlp.log file
