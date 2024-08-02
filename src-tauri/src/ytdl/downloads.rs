@@ -111,17 +111,19 @@ pub(crate) async fn download_video(
             // This downloads the best video with audio as a mp4 file. Might edit this later to support other formats (if supported by yt-dlp)
             ytdlp_args.push("--format".into());
             ytdlp_args.push("bv+ba".into());
+
+            // Force the output format to mp4.
+            // This might cause issues, I don't know if I'm going to keep this.
+            // Might set it as an option in the future and let the user decide.
+            ytdlp_args.push("--merge-output-format".into());
+            ytdlp_args.push("mp4".into());
         }
     }
 
     ytdlp_args.push("--ffmpeg-location".into());
     ytdlp_args.push(ffmpeg_path.into());
 
-    // Force the output format to mp4.
-    // This might cause issues, I don't know if I'm going to keep this.
-    // Might set it as an option in the future and let the user decide.
-    ytdlp_args.push("--merge-output-format".into());
-    ytdlp_args.push("mp4".into());
+
 
     let video_info =
         get_video_info(url, &ytdlp_path, ffmpeg_path).expect("Failed to get video info");
