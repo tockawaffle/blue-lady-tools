@@ -30,7 +30,7 @@ To install Blue Lady Tools, follow these steps:
 3.
     - Use the .msi to install the app.
 4.
-    - You can either install on the default path or choose a custom path (recommended).
+    - You can either install on the default path or choose a custom path.
 5.
     - Once installed, you can run the app from the start menu or the desktop shortcut.
 6.
@@ -38,12 +38,8 @@ To install Blue Lady Tools, follow these steps:
 
 #### Notes:
 
-If you choose to install on the default path, be sure to open the app as an administrator since it requires access
-to the Program Files directory for the resources folder.
-
 If using OBS, you can set the watchalong.txt file as a text source to display the watchalong time on your stream. You
-can find the watchalong.txt file in the resources folder of the app located in the Program Files directory (default
-path) or the custom path you chose during installation.
+can find the watchalong.txt file at "%APPDATA%/Roaming/Blue Lady's Tools/watchalong" OR "C:\Users\<YOUR_USER>\AppData\Roaming\Blue Lady's Tools\watchalong".
 
 ---
 
@@ -158,33 +154,27 @@ Retrieves information about a YouTube video.
 
 ## Considerations and Limitations
 
-- The `yt-dlp` and `ffmpeg` executables must be present in the `/src-tauri/resources` directory.
-
-- If installed on the default path, the app must be run as an administrator to access the Program Files directory.
+- The `yt-dlp` and `ffmpeg` executables must be downloaded from the sources. You can use the button at settings to download them.
 
 - The app is only available for Windows x64 systems. Support for other platforms may be added in the future.
 
-
-- If the app keeps crashing, check your Program Files directory for the resources folder. In there, you should find the
-  yt-dlp and ffmpeg executables. If they are not there, you can download them from the official websites and place them
-  there.
-
-- If you have everything in the resources folder, run the app as administrator. This is because the app needs access to
-  the Program Files directory to access the resources' folder. Might fix this later on.
-
+- If the app keeps crashing, womp womp. . . JK. Please create an issue at the github page, if you provide the steps you did it would help A LOT
 
 - The download progress is kinda buggy. It sometimes doesn't show progress. If you encounter this, wait for the
-  download to finish. The download will still be successful. You'll know it's done when the progress bar disappears.
+  download to finish. The download will still be successful. You'll know it's done when the green text appears.
 
+- The download sometimes might take some time to complete, I don't know why it's this slow but there's not really much I can do about that.
+    I might review the code later to check if something is bottlenecking the download, but for now I'll leave at it is, so expect to wait a hot minute or two for your download to complete.
+
+- It also forces every video+audio (default download option) to be converted to mp4 format. This can cause quality loss. This is going to be an option in the future.
 
 - The default location for downloads is your download folders. You can change this in the app settings.
 
-- Also, the buttons for checking and reinstalling dependencies are not functional yet. You can check the resources
-  folder in the Program Files directory to see if the dependencies are there.
-
 - There's also a bug that causes the app to not display the correct theme being used, this is a known issue and will be
   fixed in the next release.
+  
 - The app is still in development. If you encounter any bugs, please open an issue in the GitHub repository.
+
 
 ---
 
@@ -200,14 +190,16 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ### Third-Party Licenses
 
-This project includes binaries of third-party tools which are stored in the `/resources` folder. These tools are:
+This project requires and downloads the following dependencies:
 
 - `yt-dlp` (YouTube-DL fork)
     - Website: [yt-dlp GitHub](https://github.com/yt-dlp/yt-dlp)
     - Source Code: [yt-dlp source](https://github.com/yt-dlp/yt-dlp)
 
 - `ffmpeg`
-    - Website: [FFmpeg](https://ffmpeg.org)
-    - Source Code: [FFmpeg source](https://ffmpeg.org/download.html)
+    - Website: [FFmpeg](https://github.com/yt-dlp/FFmpeg-Builds)
+    - Source Code: [FFmpeg source](https://github.com/yt-dlp/FFmpeg-Builds)
+
+They are not bundled with the app anymore.
 
 ---
