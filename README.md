@@ -39,7 +39,7 @@ To install Blue Lady Tools, follow these steps:
 #### Notes:
 
 If using OBS, you can set the watchalong.txt file as a text source to display the watchalong time on your stream. You
-can find the watchalong.txt file at "%APPDATA%/Roaming/Blue Lady's Tools/watchalong" OR "C:\Users\<YOUR_USER>\AppData\Roaming\Blue Lady's Tools\watchalong".
+can find the watchalong.txt file at "%APPDATA%/Roaming/Blue Lady's Tools/watchalong" OR "C:\Users\<YOUR_USER>\AppData\Roaming\Blue Lady's Tools\watchalong". If the file is not in there, open the "WatchAlong Timer" section on the app for it to create the paths.
 
 ---
 
@@ -158,7 +158,7 @@ Retrieves information about a YouTube video.
 
 - The app is only available for Windows x64 systems. Support for other platforms may be added in the future.
 
-- If the app keeps crashing, womp womp. . . JK. Please create an issue at the github page, if you provide the steps you did it would help A LOT
+- If the app keeps crashing, womp womp. . . JK. Please create an issue at the github page, and if you provide the steps you did it would help A LOT
 
 - The download progress is kinda buggy. It sometimes doesn't show progress. If you encounter this, wait for the
   download to finish. The download will still be successful. You'll know it's done when the green text appears.
@@ -172,9 +172,13 @@ Retrieves information about a YouTube video.
 
 - There's also a bug that causes the app to not display the correct theme being used, this is a known issue and will be
   fixed in the next release.
+
+- This app does not support downloading: Age restricted videos, Country restricted videos, Removed videos and Playlists (This last one will be added later)
+    - - There are methods for downloading the first two, but it requires cookies/proxy and I'm not 100% sure how I would add support for this
   
 - The app is still in development. If you encounter any bugs, please open an issue in the GitHub repository.
 
+- This whole README is in english but the project is in portuguese (??? Sorry, I'm weird, I'll add english translation later...)
 
 ---
 
