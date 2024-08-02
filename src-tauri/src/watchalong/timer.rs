@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use tauri::{Emitter, Window};
 
+/// Struct representing a Timer.
 pub(crate) struct Timer {
     path: String,
     stop_flag: Arc<Mutex<bool>>,
@@ -12,6 +13,15 @@ pub(crate) struct Timer {
 }
 
 impl Timer {
+    /// Creates a new Timer instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A string slice that holds the path to the watchalong file.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `Timer`.
     pub(crate) fn new(path: &str) -> Self {
         Timer {
             path: path.to_string(),
@@ -20,13 +30,20 @@ impl Timer {
         }
     }
 
+    /// Starts the timer.
+    ///
+    /// # Arguments
+    ///
+    /// * `window` - A `Window` instance to emit events to the frontend.
     pub(crate) fn start(&self, window: Window) {
-        if *self.is_running.lock().unwrap() {
+        let mut is_running = self.is_running.lock().unwrap();
+        if *is_running {
             return; // If already running, do nothing
         }
 
         // Mark as running
-        *self.is_running.lock().unwrap() = true;
+        *is_running = true;
+        drop(is_running); // Release the lock
 
         let path = self.path.clone();
         let stop_flag = self.stop_flag.clone();
@@ -66,6 +83,11 @@ impl Timer {
         });
     }
 
+    /// Reads the watchalong file and extracts the episode and time.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing `FileContent` on success or an error on failure.
     pub(crate) fn read_file(&self) -> Result<FileContent, Box<dyn std::error::Error>> {
         let path = self.path.clone();
 
@@ -88,6 +110,11 @@ impl Timer {
         })
     }
 
+    /// Increments the episode number in the watchalong file and emits an event.
+    ///
+    /// # Arguments
+    ///
+    /// * `window` - A `Window` instance to emit events to the frontend.
     pub(crate) fn add_episode(&self, window: Window) {
         let file = self.read_file().expect("Error reading watchalong");
         let episode = file.episode.parse::<i32>().unwrap();
@@ -109,6 +136,11 @@ impl Timer {
             .unwrap();
     }
 
+    /// Decrements the episode number in the watchalong file and emits an event.
+    ///
+    /// # Arguments
+    ///
+    /// * `window` - A `Window` instance to emit events to the frontend.
     pub(crate) fn dec_episode(&self, window: Window) {
         let file = self.read_file().expect("Error reading watchalong");
         let path = self.path.clone();
@@ -131,6 +163,11 @@ impl Timer {
             .unwrap();
     }
 
+    /// Resets the watchalong file to the default content.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
     pub(crate) fn reset_file(&self) -> Result<(), std::io::Error> {
         // Create the watchalong if it doesn't exist
         fs::File::create(&self.path).unwrap();
@@ -141,6 +178,11 @@ impl Timer {
         Ok(())
     }
 
+    /// Resets the timer in the watchalong file to 00:00.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` indicating success or failure.
     pub(crate) fn reset_timer(&self) -> Result<(), std::io::Error> {
         // Get episode from the watchalong
         let file = &self.read_file().expect("Error reading watchalong");
@@ -153,17 +195,37 @@ impl Timer {
         Ok(())
     }
 
+    /// Stops the timer.
     pub(crate) fn stop(&self) {
         *self.stop_flag.lock().unwrap() = true;
     }
 }
 
+/// Writes content to the watchalong file.
+///
+/// # Arguments
+///
+/// * `path` - The path to the watchalong file.
+/// * `content` - The content to write to the file.
+///
+/// # Returns
+///
+/// A `Result` indicating success or failure.
 fn write_file(path: &str, content: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Write content to the watchalong
     fs::write(path, content)?;
     Ok(())
 }
 
+/// Parses a time string into minutes and seconds.
+///
+/// # Arguments
+///
+/// * `time` - A string slice representing the time in "MM:SS" format.
+///
+/// # Returns
+///
+/// A tuple containing minutes and seconds as `u32`.
 pub(crate) fn parse_time(time: &str) -> (u32, u32) {
     // Parse the time string into minutes and seconds
     let mut parts = time.split(":");
@@ -180,6 +242,7 @@ pub(crate) fn parse_time(time: &str) -> (u32, u32) {
     (minutes, seconds)
 }
 
+/// Struct representing the content of the watchalong file.
 pub(crate) struct FileContent {
     pub(crate) episode: String,
     pub(crate) time: String,

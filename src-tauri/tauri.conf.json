@@ -1,6 +1,6 @@
 {
     "productName": "Blue Lady Tools",
-    "version": "0.2.6",
+    "version": "0.2.7",
     "identifier": "com.tockanest.blue-ladys-tools",
     "$schema": "../node_modules/@tauri-apps/cli/schema.json",
     "build": {

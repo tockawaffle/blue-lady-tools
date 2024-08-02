@@ -102,20 +102,26 @@ pub(crate) async fn download_video(
             ytdlp_args.push("--audio-format".into());
             ytdlp_args.push("mp3".into());
             // Needs to be added to the args if the format is audio only
-            ytdlp_args.push("--ffmpeg-location".into());
-            ytdlp_args.push(ffmpeg_path.into());
         }
         VideoFormats::VideoOnly => {
             ytdlp_args.push("--format".into());
             ytdlp_args.push("bestvideo[ext=mp4]".into());
         }
         VideoFormats::VideoAndAudio => {
-            println!("Downloading video and audio");
             // This downloads the best video with audio as a mp4 file. Might edit this later to support other formats (if supported by yt-dlp)
             ytdlp_args.push("--format".into());
-            ytdlp_args.push("bestvideo+bestaudio/mp4".into());
+            ytdlp_args.push("bv+ba".into());
         }
     }
+
+    ytdlp_args.push("--ffmpeg-location".into());
+    ytdlp_args.push(ffmpeg_path.into());
+
+    // Force the output format to mp4.
+    // This might cause issues, I don't know if I'm going to keep this.
+    // Might set it as an option in the future and let the user decide.
+    ytdlp_args.push("--merge-output-format".into());
+    ytdlp_args.push("mp4".into());
 
     let video_info =
         get_video_info(url, &ytdlp_path, ffmpeg_path).expect("Failed to get video info");
@@ -152,11 +158,9 @@ pub(crate) async fn download_video(
             ytdlp_args.push("--ffmpeg-location".into());
             ytdlp_args.push(ffmpeg_path.into());
         }
-
-        //Add metadata to the clip because why not? Also, might add this as a general flag for all downloads
-        ytdlp_args.push("--add-metadata".into());
     }
 
+    ytdlp_args.push("--add-metadata".into());
     ytdlp_args.push("--progress".into());
     ytdlp_args.push("--newline".into());
     ytdlp_args.push("--verbose".into());
@@ -210,10 +214,7 @@ pub(crate) async fn download_video(
 
     // Process the output lines
     while let Some(line) = rx.recv().await {
-        if line.contains("[download]") && line.contains("of") && line.contains("ETA") {
-            println!("{}", line);
-            window.emit("download_progress", line.clone()).unwrap();
-        }
+        window.emit("download_progress", line.clone()).unwrap();
 
         // Write ytdlp.log to the resources folder for debugging purposes with new lines for each log entry
         ytdlp_log.write_all(format!("{}\n", line).as_bytes()).unwrap();

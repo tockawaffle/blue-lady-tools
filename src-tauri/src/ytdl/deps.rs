@@ -94,7 +94,6 @@ pub(crate) fn verify_deps(handle: AppHandle) -> VerifyDeps {
 
     match invoke_ffmpeg_from_local(handle.clone()) {
         Ok(ffmpeg_path) => {
-            println!("FFMPEG path: {}", ffmpeg_path);
             deps.ffmpeg = true;
         }
         Err(e) => {
@@ -104,7 +103,6 @@ pub(crate) fn verify_deps(handle: AppHandle) -> VerifyDeps {
 
     match invoke_ytdlp_from_local(handle) {
         Ok(ytdlp_path) => {
-            println!("YT-DLP path: {}", ytdlp_path);
             deps.ytdlp = true;
         }
         Err(e) => {
