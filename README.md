@@ -52,8 +52,6 @@ Before you begin, ensure you have met the following requirements:
 - Rust and Cargo: [Install Rust](https://www.rust-lang.org/tools/install)
 - Tauri: [Install Tauri](https://tauri.app/v1/guides/getting-started/prerequisites)
 - Node.js: [Install Node.js](https://nodejs.org/en/download/)
-- `yt-dlp`: [Install yt-dlp](https://github.com/yt-dlp/yt-dlp#installation)
-- `ffmpeg`: [Install ffmpeg](https://ffmpeg.org/download.html)
 
 ---
 
